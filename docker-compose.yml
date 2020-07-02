@@ -1,0 +1,25 @@
+version: '3.2'
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: zaiminc/gocat:dev
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/bot
+      - ~/.kube/config:/root/.kube/config
+    environment:
+      LOCAL: "true"
+      BOT_ID:
+      CONFIG_MANIFEST_REPOSITORY:
+      CONFIG_GITHUB_ACCESS_TOKEN:
+      CONFIG_SLACK_VERIFICATION_TOKEN:
+      CONFIG_SLACK_OAUTH_TOKEN:
+      CONFIG_JENKINS_HOST:
+      CONFIG_JENKINS_BOT_TOKEN:
+      CONFIG_JENKINS_JOB_TOKEN:
+      CONFIG_ARGOCD_HOST:
+      AWS_ACCESS_KEY_ID:
+      AWS_SECRET_ACCESS_KEY:

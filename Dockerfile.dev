@@ -1,0 +1,17 @@
+FROM golang:1.14.3-stretch
+
+RUN apt-get update && apt-get install -y unzip && \
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+  unzip awscliv2.zip && \
+  ./aws/install
+
+RUN mkdir /bot
+WORKDIR /bot
+
+RUN go get github.com/pilu/fresh
+
+COPY . .
+
+EXPOSE 8080
+
+CMD fresh
