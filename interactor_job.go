@@ -22,7 +22,7 @@ func NewInteractorJob(i InteractorContext) (o InteractorJob) {
 	return
 }
 
-func (i InteractorJob) Request(pj DeployProject, phase string, branch string, assigner string) (blocks []slack.Block, err error) {
+func (i InteractorJob) Request(pj DeployProject, phase string, branch string, assigner string, channel string) (blocks []slack.Block, err error) {
 	var txt *slack.TextBlockObject
 	p := pj.FindPhase(phase)
 	txt = slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*%s*\n*%s*\n*%s* ブランチ\nをデプロイしますか?", p.Path, phase, branch), false, false)
@@ -42,10 +42,10 @@ func (i InteractorJob) BranchListFromRaw(params string) ([]slack.Block, error) {
 	return i.branchList(pj, p[1])
 }
 
-func (i InteractorJob) SelectBranch(params string, branch string, userID string) ([]slack.Block, error) {
+func (i InteractorJob) SelectBranch(params string, branch string, userID string, channel string) ([]slack.Block, error) {
 	p := strings.Split(params, "_")
 	pj := i.projectList.Find(p[0])
-	return i.Request(pj, p[1], branch, userID)
+	return i.Request(pj, p[1], branch, userID, channel)
 }
 
 func (i InteractorJob) Approve(params string, userID string, channel string) (blocks []slack.Block, err error) {
@@ -68,7 +68,10 @@ func (i InteractorJob) approve(target string, phase string, branch string, userI
 		blocks = i.plainBlock(err.Error())
 		return
 	}
-	tag := ecr.DockerImageTag(pj.ECRRepository(), branch)
+	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: branch})
+	if err != nil {
+		return
+	}
 
 	job := batchv1.Job{}
 	j, err := yaml.ToJSON(rawFile)

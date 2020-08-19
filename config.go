@@ -72,7 +72,7 @@ func InitConfig() (err error) {
 
 	default:
 		log.Print("Useing env as secret store. Set SECRET_STORE env if you want to use another secret store")
-		envs := []string{"CONFIG_GITHUB_ACCESS_TOKEN", "CONFIG_SLACK_OAUTH_TOKEN", "CONFIG_SLACK_VERIFICATION_TOKEN", "CONFIG_JENKINS_TOKEN"}
+		envs := []string{"CONFIG_GITHUB_ACCESS_TOKEN", "CONFIG_SLACK_OAUTH_TOKEN", "CONFIG_SLACK_VERIFICATION_TOKEN", "CONFIG_JENKINS_BOT_TOKEN", "CONFIG_JENKINS_JOB_TOKEN"}
 		for _, env := range envs {
 			if os.Getenv(env) == "" {
 				log.Printf("[WORNING] %s environment variable is Empty", env)

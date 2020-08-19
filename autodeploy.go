@@ -4,15 +4,20 @@ import (
 	"fmt"
 	"github.com/nlopes/slack"
 	"log"
-	"strings"
 	"time"
 )
 
 type AutoDeploy struct {
 	client      *slack.Client
-	github      GitHub
-	git         GitDocAWSOperator
+	github      *GitHub
+	git         *GitDocAWSOperator
 	projectList *ProjectList
+	modelList   *DeployModelList
+}
+
+func NewAutoDeploy(client *slack.Client, github *GitHub, git *GitDocAWSOperator, projectList *ProjectList) AutoDeploy {
+	ml := NewDeployModelList(github, git)
+	return AutoDeploy{client, github, git, projectList, ml}
 }
 
 func (a AutoDeploy) Watch(sec int64) {
@@ -38,44 +43,31 @@ func (a AutoDeploy) CheckAndDeploy() {
 			if !phase.AutoDeploy {
 				continue
 			}
-			k, err := a.github.GetKustomization(phase.Path)
+			currentTag, err := phase.Destination.GetCurrentRevision(GetCurrentRevisionInput{github: a.github})
 			if err != nil {
 				log.Print(err)
 				continue
 			}
-			for _, image := range k.Images {
-				if !strings.HasPrefix(image.Name, dp.DockerRepository()) {
-					continue
-				}
-				tag := ecr.DockerImageTag(dp.ECRRepository(), "master")
-				if image.NewTag == tag || tag == "" {
-					log.Printf("[INFO] Auto Deploy (%s:%s) is skipped", dp.ID, phase.Name)
-					continue
-				}
-				log.Print("[INFO] Auto Deploy is started")
-				a.Deploy(dp, phase, tag)
-				break
+			tag, err := ecr.FindImageTagByRegexp(dp.ECRRepository(), dp.FilterRegexp(), dp.TargetRegexp(), ImageTagVars{Branch: "master"})
+			if currentTag == tag || err != nil {
+				log.Printf("[INFO] Auto Deploy (%s:%s) is skipped", dp.ID, phase.Name)
+				continue
+			}
+			log.Print("[INFO] Auto Deploy is started")
+			model, err := a.modelList.Find(phase.Kind)
+			if err != nil {
+				log.Print(err)
+				continue
+			}
+			_, err = model.Deploy(dp, phase.Name, DeployOption{Branch: "master"})
+			if err != nil {
+				log.Print(err)
+				continue
+			}
+			if phase.NotifyChannel != "" {
+				a.client.PostMessage(phase.NotifyChannel, a.slackMessage(fmt.Sprintf("%s:%s %s is Deployed", dp.ID, tag, phase.Name)))
 			}
 		}
-	}
-}
-
-func (a AutoDeploy) Deploy(dp DeployProject, phase DeployPhase, tag string) {
-	prBranch, err := a.git.PushDockerImageTag(dp.ID, dp.K8SMetadata(), phase.Name, tag, dp.DockerRepository())
-	if err != nil {
-		return
-	}
-
-	prID, _, err := a.github.CreatePullRequest(prBranch, fmt.Sprintf("Deploy %s %s", dp.ID, "master"), "")
-	if err != nil {
-		return
-	}
-
-	if err := a.github.MergePullRequest(prID); err != nil {
-		return
-	}
-	if phase.NotifyChannel != "" {
-		a.client.PostMessage(phase.NotifyChannel, a.slackMessage(fmt.Sprintf("%s:%s %s is Deployed", dp.ID, tag, phase.Name)))
 	}
 }
 

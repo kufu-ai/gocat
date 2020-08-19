@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"os"
 	"sigs.k8s.io/kustomize/api/types"
-	"strings"
 	"time"
 )
 
@@ -140,10 +139,10 @@ func (g GitDocAWSOperator) PushDockerImageTag(id string, target string, phase st
 }
 
 type ConfigMap struct {
-	APIVersion string `yaml:"apiVersion"`
-	Kind string `yaml:"kind"`
-	Metadata map[string]string `yaml:"metadata"`
-	Data map[string]string `yaml:"data"`
+	APIVersion string            `yaml:"apiVersion"`
+	Kind       string            `yaml:"kind"`
+	Metadata   map[string]string `yaml:"metadata"`
+	Data       map[string]string `yaml:"data"`
 }
 
 type OverWrite interface {
@@ -218,7 +217,7 @@ func (g GitDocAWSOperator) commit(w *git.Worktree, targetFilePath string, o Over
 }
 
 type KustomizationOverWrite struct {
-	tag string
+	tag       string
 	targetTag string
 }
 
@@ -228,10 +227,19 @@ func (o KustomizationOverWrite) Update(b []byte) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	updated := false
 	for i, image := range obj.Images {
-		if strings.HasPrefix(image.Name, o.targetTag) {
+		if image.Name == o.targetTag {
 			obj.Images[i].NewTag = o.tag
+			updated = true
 		}
+	}
+
+	if !updated {
+		obj.Images = append(obj.Images, types.Image{
+			Name:   o.targetTag,
+			NewTag: o.tag,
+		})
 	}
 	return obj, nil
 }

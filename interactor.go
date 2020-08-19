@@ -7,22 +7,23 @@ import (
 )
 
 type DeployUsecase interface {
-	Request(DeployProject, string, string, string) (blocks []slack.Block, err error)
+	Request(DeployProject, string, string, string, string) (blocks []slack.Block, err error)
 	BranchList(DeployProject, string) (blocks []slack.Block, err error)
 	BranchListFromRaw(string) (blocks []slack.Block, err error)
 	Approve(string, string, string) (blocks []slack.Block, err error)
 	Reject(string, string) (blocks []slack.Block, err error)
-	SelectBranch(string, string, string) (blocks []slack.Block, err error)
+	SelectBranch(string, string, string, string) (blocks []slack.Block, err error)
 }
 
 type InteractorFactory struct {
 	kustomize InteractorKustomize
 	jenkins   InteractorJenkins
 	job       InteractorJob
+	lambda    InteractorLambda
 }
 
 func NewInteractorFactory(c InteractorContext) InteractorFactory {
-	return InteractorFactory{kustomize: NewInteractorKustomize(c), jenkins: NewInteractorJenkins(c), job: NewInteractorJob(c)}
+	return InteractorFactory{kustomize: NewInteractorKustomize(c), jenkins: NewInteractorJenkins(c), job: NewInteractorJob(c), lambda: NewInteractorLambda(c)}
 }
 
 func (i InteractorFactory) Get(pj DeployProject, phase string) DeployUsecase {
@@ -38,6 +39,8 @@ func (i InteractorFactory) get(kind string) DeployUsecase {
 		return i.kustomize
 	case "job":
 		return i.job
+	case "lambda":
+		return i.lambda
 	default:
 		return i.jenkins
 	}
@@ -49,6 +52,8 @@ func (i InteractorFactory) GetByParams(params string) DeployUsecase {
 		return i.kustomize
 	case strings.Contains(params, "job"):
 		return i.job
+	case strings.Contains(params, "lambda"):
+		return i.lambda
 	default:
 		return i.jenkins
 	}

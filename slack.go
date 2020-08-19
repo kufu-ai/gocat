@@ -1,72 +1,83 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 
 	"github.com/nlopes/slack"
+	"github.com/nlopes/slack/slackevents"
 )
 
 type SlackListener struct {
 	client            *slack.Client
-	botID             string
+	verificationToken string
 	projectList       *ProjectList
 	userList          *UserList
 	interactorFactory *InteractorFactory
 }
 
-// ListenAndResponse RTMイベントの待ち受け
-func (s *SlackListener) ListenAndResponse() {
-	// Start listening slack events
-	rtm := s.client.NewRTM()
-	go rtm.ManageConnection()
+func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r.Body)
+	body := buf.String()
+	eventsAPIEvent, err := slackevents.ParseEvent(json.RawMessage(body), slackevents.OptionVerifyToken(&slackevents.TokenComparator{VerificationToken: s.verificationToken}))
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	if eventsAPIEvent.Type == slackevents.URLVerification {
+		var r *slackevents.ChallengeResponse
+		err = json.Unmarshal([]byte(body), &r)
+		if err != nil {
+			fmt.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		w.Header().Set("Content-Type", "text")
+		w.Write([]byte(r.Challenge))
+	}
 
-	// Handle slack events
-	for msg := range rtm.IncomingEvents {
-		fmt.Println("Event Reveived: ")
-		switch ev := msg.Data.(type) {
-		case *slack.MessageEvent:
-			if err := s.handleMessageEvent(ev); err != nil {
-				log.Printf("[ERROR] Failed to handle message: %s", err)
-			}
-			log.Print("[INFO] call")
+	if eventsAPIEvent.Type == slackevents.CallbackEvent {
+		innerEvent := eventsAPIEvent.InnerEvent
+		switch ev := innerEvent.Data.(type) {
+		case *slackevents.AppMentionEvent:
+			s.handleMessageEvent(ev)
 		}
 	}
 }
 
-func (s *SlackListener) handleMessageEvent(ev *slack.MessageEvent) error {
+func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) error {
 	// Only response mention to bot. Ignore else.
-	log.Print(ev.Msg.Text)
-	if !strings.HasPrefix(ev.Msg.Text, fmt.Sprintf("<@%s> ", s.botID)) {
+	log.Print(ev.Text)
+	if regexp.MustCompile(`help`).MatchString(ev.Text) {
+		s.client.PostMessage(ev.Channel, s.helpMessage())
 		return nil
 	}
-	if regexp.MustCompile(`help`).MatchString(ev.Msg.Text) {
-		s.client.PostMessage(ev.Msg.Channel, s.helpMessage())
+	if regexp.MustCompile(`ls`).MatchString(ev.Text) {
+		s.client.PostMessage(ev.Channel, s.projectListMessage())
 		return nil
 	}
-	if regexp.MustCompile(`ls`).MatchString(ev.Msg.Text) {
-		s.client.PostMessage(ev.Msg.Channel, s.projectListMessage())
-		return nil
-	}
-	if regexp.MustCompile(`reload`).MatchString(ev.Msg.Text) {
+	if regexp.MustCompile(`reload`).MatchString(ev.Text) {
 		s.projectList.Reload()
 		s.userList.Reload()
 		section := slack.NewSectionBlock(slack.NewTextBlockObject("mrkdwn", "Deploy Projects and Users is Reloaded", false, false), nil, nil)
-		s.client.PostMessage(ev.Msg.Channel, slack.MsgOptionBlocks(section))
+		s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(section))
 		return nil
 	}
 
 	s.projectList.Reload()
 	s.userList.Reload()
-	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|stg|pro|prd) branch`).FindAllStringSubmatch(ev.Msg.Text, -1); match != nil {
+	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|stg|pro|prd) branch`).FindAllStringSubmatch(ev.Text, -1); match != nil {
 		log.Println("[INFO] Deploy command is Called")
 		commands := strings.Split(match[0][0], " ")
 		target, err := s.projectList.FindByAlias(commands[1])
 		if err != nil {
 			log.Println("[ERROR] ", err)
-			s.client.PostMessage(ev.Msg.Channel, s.errorMessage(err.Error()))
+			s.client.PostMessage(ev.Channel, s.errorMessage(err.Error()))
 			return nil
 		}
 
@@ -75,43 +86,43 @@ func (s *SlackListener) handleMessageEvent(ev *slack.MessageEvent) error {
 		blocks, err := interactor.BranchList(target, phase)
 		if err != nil {
 			log.Println("[ERROR] ", err)
-			s.client.PostMessage(ev.Msg.Channel, s.errorMessage(err.Error()))
+			s.client.PostMessage(ev.Channel, s.errorMessage(err.Error()))
 			return nil
 		}
 
-		s.client.PostMessage(ev.Msg.Channel, slack.MsgOptionBlocks(blocks...))
+		s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(blocks...))
 		return nil
 	}
-	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|stg|pro|prd)`).FindAllStringSubmatch(ev.Msg.Text, -1); match != nil {
+	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|stg|pro|prd)`).FindAllStringSubmatch(ev.Text, -1); match != nil {
 		log.Println("[INFO] Deploy command is Called")
 		commands := strings.Split(match[0][0], " ")
 		target, err := s.projectList.FindByAlias(commands[1])
 		if err != nil {
 			log.Println("[ERROR] ", err)
-			s.client.PostMessage(ev.Msg.Channel, s.errorMessage(err.Error()))
+			s.client.PostMessage(ev.Channel, s.errorMessage(err.Error()))
 			return nil
 		}
 
 		phase := s.toPhase(commands[2])
 		interactor := s.interactorFactory.Get(target, phase)
-		blocks, err := interactor.Request(target, phase, "master", ev.User)
+		blocks, err := interactor.Request(target, phase, "master", ev.User, ev.Channel)
 		if err != nil {
 			log.Println("[ERROR] ", err)
-			s.client.PostMessage(ev.Msg.Channel, s.errorMessage(err.Error()))
+			s.client.PostMessage(ev.Channel, s.errorMessage(err.Error()))
 			return nil
 		}
 
-		s.client.PostMessage(ev.Msg.Channel, slack.MsgOptionBlocks(blocks...))
+		s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(blocks...))
 		return nil
 	}
-	if regexp.MustCompile(`deploy staging`).MatchString(ev.Msg.Text) {
+	if regexp.MustCompile(`deploy staging`).MatchString(ev.Text) {
 		msgOpt := s.SelectDeployTarget("staging")
-		s.client.PostMessage(ev.Msg.Channel, msgOpt)
+		s.client.PostMessage(ev.Channel, msgOpt)
 		return nil
 	}
-	if regexp.MustCompile(`deploy production`).MatchString(ev.Msg.Text) {
+	if regexp.MustCompile(`deploy production`).MatchString(ev.Text) {
 		msgOpt := s.SelectDeployTarget("production")
-		s.client.PostMessage(ev.Msg.Channel, msgOpt)
+		s.client.PostMessage(ev.Channel, msgOpt)
 		return nil
 	}
 	return nil

@@ -106,7 +106,7 @@ func (h interactionHandler) Deploy(w http.ResponseWriter, interactionRequest sla
 	case strings.Contains(params[0], "reject"):
 		blocks, err = interactor.Reject(params[1], userID)
 	case strings.Contains(params[0], "selectbranch"):
-		blocks, err = interactor.SelectBranch(params[1], interactionRequest.ActionCallback.BlockActions[0].SelectedOption.Text.Text, userID)
+		blocks, err = interactor.SelectBranch(params[1], interactionRequest.ActionCallback.BlockActions[0].SelectedOption.Text.Text, userID, interactionRequest.Channel.Name)
 	case strings.Contains(params[0], "branchlist"):
 		blocks, err = interactor.BranchListFromRaw(params[1])
 	default:

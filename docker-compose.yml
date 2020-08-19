@@ -12,7 +12,6 @@ services:
       - ~/.kube/config:/root/.kube/config
     environment:
       LOCAL: "true"
-      BOT_ID:
       CONFIG_MANIFEST_REPOSITORY:
       CONFIG_GITHUB_ACCESS_TOKEN:
       CONFIG_SLACK_VERIFICATION_TOKEN:

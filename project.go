@@ -1,27 +1,48 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	yaml "gopkg.in/yaml.v2"
 	"regexp"
 	"strings"
+	"text/template"
 )
 
+type PayloadVars struct {
+	Tag string
+}
+
+func (self PayloadVars) Parse(s string) (string, error) {
+	b := bytes.NewBuffer([]byte(""))
+	tmpl, err := template.New("").Parse(s)
+	if err != nil {
+		return "", err
+	}
+	err = tmpl.Execute(b, self)
+	return b.String(), err
+}
+
 type DeployPhase struct {
-	Name          string `yaml:"name"`
-	Kind          string `yaml:"kind"`
-	Path          string `yaml:"path"`
-	AutoDeploy    bool   `yaml:"autoDeploy"`
-	NotifyChannel string `yaml:"notifyChannel"`
+	Name          string      `yaml:"name"`
+	Kind          string      `yaml:"kind"`
+	Path          string      `yaml:"path"` // deprecated
+	AutoDeploy    bool        `yaml:"autoDeploy"`
+	NotifyChannel string      `yaml:"notifyChannel"`
+	Payload       string      `yaml:"payload"`
+	Destination   Destination `yaml:"destination"`
 }
 
 type DeployProject struct {
 	ID               string
 	Kind             string
 	jenkinsJob       string
+	funcName         string // for Lambda
 	gitHubRepository string
 	manifestPath     string
 	dockerRegistry   string
+	filterRegexp     string
+	targetRegexp     string
 	Alias            string
 	Phases           []DeployPhase
 }
@@ -45,6 +66,24 @@ func (pj DeployProject) GitHubRepository() string {
 
 func (pj DeployProject) K8SMetadata() string {
 	return pj.manifestPath
+}
+
+func (pj DeployProject) FuncName() string {
+	return pj.funcName
+}
+
+func (pj DeployProject) FilterRegexp() string {
+	if pj.filterRegexp == "" {
+		return "^{{.Branch}}$"
+	}
+	return pj.filterRegexp
+}
+
+func (pj DeployProject) TargetRegexp() string {
+	if pj.targetRegexp == "" {
+		return `\b[0-9a-f]{5,40}\b`
+	}
+	return pj.targetRegexp
 }
 
 func (pj DeployProject) DockerRepository() string {
@@ -76,8 +115,28 @@ func (p *ProjectList) Reload() {
 		pj.gitHubRepository = cm.Data["GitHubRepository"]
 		pj.manifestPath = cm.Data["ManifestPath"]
 		pj.dockerRegistry = cm.Data["DockerRegistry"]
+		pj.filterRegexp = cm.Data["FilterRegexp"]
+		pj.targetRegexp = cm.Data["TargetRegexp"]
+		pj.funcName = cm.Data["FuncName"]
 		pj.Alias = cm.Data["Alias"]
 		yaml.Unmarshal([]byte(cm.Data["Phases"]), &pj.Phases)
+		for i, phase := range pj.Phases {
+			if phase.Kind == "" {
+				pj.Phases[i].Kind = pj.Kind
+			}
+			if phase.Destination.Kind == "" {
+				pj.Phases[i].Destination.Kind = pj.Phases[i].Kind
+			}
+			if phase.Destination.Kustomize.Path == "" {
+				pj.Phases[i].Destination.Kustomize.Path = phase.Path
+			}
+			if phase.Destination.Kustomize.Image == "" {
+				pj.Phases[i].Destination.Kustomize.Image = pj.DockerRepository()
+			}
+			if phase.Destination.ECS.Image == "" {
+				pj.Phases[i].Destination.ECS.Image = pj.DockerRepository()
+			}
+		}
 		tmp = append(tmp, pj)
 	}
 	p.Items = tmp

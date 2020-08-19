@@ -19,7 +19,7 @@ func NewInteractorJenkins(i InteractorContext) (o InteractorJenkins) {
 	return
 }
 
-func (i InteractorJenkins) Request(pj DeployProject, phase string, branch string, assigner string) ([]slack.Block, error) {
+func (i InteractorJenkins) Request(pj DeployProject, phase string, branch string, assigner string, channel string) ([]slack.Block, error) {
 	var txt *slack.TextBlockObject
 	if phase == "production" && branch != "master" {
 		txt = slack.NewTextBlockObject(
@@ -52,10 +52,10 @@ func (i InteractorJenkins) BranchListFromRaw(params string) ([]slack.Block, erro
 	return i.branchList(pj, p[1])
 }
 
-func (i InteractorJenkins) SelectBranch(params string, branch string, userID string) ([]slack.Block, error) {
+func (i InteractorJenkins) SelectBranch(params string, branch string, userID string, channel string) ([]slack.Block, error) {
 	p := strings.Split(params, "_")
 	pj := i.projectList.Find(p[0])
-	return i.Request(pj, p[1], branch, userID)
+	return i.Request(pj, p[1], branch, userID, channel)
 }
 
 func (i InteractorJenkins) Approve(params string, userID string, channel string) ([]slack.Block, error) {

@@ -10,84 +10,44 @@ import (
 
 type InteractorKustomize struct {
 	InteractorContext
+	model ModelKustomize
 }
 
 func NewInteractorKustomize(i InteractorContext) (o InteractorKustomize) {
-	o = InteractorKustomize{i}
+	o = InteractorKustomize{InteractorContext: i, model: NewModelKustomize(&o.github, &o.git)}
 	o.kind = "kustomize"
 	return
 }
 
-func (i InteractorKustomize) Request(pj DeployProject, phase string, branch string, assigner string) (blocks []slack.Block, err error) {
-	ecr, err := CreateECRInstance()
-	if err != nil {
-		return
-	}
-	tag := ecr.DockerImageTag(pj.ECRRepository(), branch)
-	if tag == "" {
-		err = fmt.Errorf("Not Found Docker Tag: Require two Tags named git commit hash and branch name on same image")
-		return
-	}
-
-	currentTag := ""
-	ph := pj.FindPhase(phase)
-	k, err := i.github.GetKustomization(ph.Path)
-	if err != nil {
-		return
-	}
-	for _, image := range k.Images {
-		if !strings.HasPrefix(image.Name, pj.DockerRepository()) {
-			continue
-		}
-		currentTag = image.NewTag
-	}
-
-	if tag == currentTag {
-		blocks = i.plainBlocks("Already Deployed in this revision")
-		return
-	}
-
-	commits, err := i.github.CommitsBetween(GitHubCommitsBetweenInput{
-		Repository:    pj.GitHubRepository(),
-		Branch:        branch,
-		FirstCommitID: currentTag,
-		LastCommitID:  tag,
-	})
-
-	commitlog := "*Commit Log*\n"
-	for _, c := range commits {
-		m := strings.Replace(c.Message, "\n", " ", -1)
-		commitlog = commitlog + "- " + m + "\n"
-	}
-
-	prBranch, err := i.git.PushDockerImageTag(pj.ID, pj.K8SMetadata(), phase, tag, pj.DockerRepository())
-	if err != nil {
-		return
-	}
-
-	prID, prNum, err := i.github.CreatePullRequest(prBranch, fmt.Sprintf("Deploy %s %s", pj.ID, branch), commitlog)
-	if err != nil {
-		return
-	}
-
+func (i InteractorKustomize) Request(pj DeployProject, phase string, branch string, assigner string, channel string) (blocks []slack.Block, err error) {
 	user := i.userList.FindBySlackUserID(assigner)
-	if user.GitHubNodeID != "" {
-		err = i.github.UpdatePullRequest(prID, user.GitHubNodeID)
+
+	go func() {
+		o, err := i.model.Prepare(pj, phase, branch, user)
 		if err != nil {
+			blocks := i.plainBlocks(err.Error())
+			i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...))
 			return
 		}
-	}
 
-	txt := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("<@%s>\n*%s*\n*%s*\n*%s* ブランチをデプロイしますか?\nhttps://github.com/%s/%s/pull/%d", assigner, pj.GitHubRepository(), phase, branch, i.github.org, i.github.repo, prNum), false, false)
-	btnTxt := slack.NewTextBlockObject("plain_text", "Deploy", false, false)
-	btn := slack.NewButtonBlockElement("", fmt.Sprintf("%s|%s_%d", i.actionHeader("approve"), prID, prNum), btnTxt)
-	blocks = append(blocks, slack.NewSectionBlock(txt, nil, slack.NewAccessory(btn)))
+		if o.Status() == DeployStatusAlready {
+			blocks = i.plainBlocks("Already Deployed in this revision")
+			i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...))
+			return
+		}
 
-	closeBtnTxt := slack.NewTextBlockObject("plain_text", "Close", false, false)
-	closeBtn := slack.NewButtonBlockElement("", fmt.Sprintf("%s|%s_%d_%s", i.actionHeader("reject"), prID, prNum, prBranch), closeBtnTxt)
-	blocks = append(blocks, slack.NewActionBlock("", closeBtn))
+		txt := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("<@%s>\n*%s*\n*%s*\n*%s* ブランチをデプロイしますか?\nhttps://github.com/%s/%s/pull/%d", assigner, pj.GitHubRepository(), phase, branch, i.github.org, i.github.repo, o.PullRequestNumber), false, false)
+		btnTxt := slack.NewTextBlockObject("plain_text", "Deploy", false, false)
+		btn := slack.NewButtonBlockElement("", fmt.Sprintf("%s|%s_%d", i.actionHeader("approve"), o.PullRequestID, o.PullRequestNumber), btnTxt)
+		blocks = append(blocks, slack.NewSectionBlock(txt, nil, slack.NewAccessory(btn)))
 
-	return
+		closeBtnTxt := slack.NewTextBlockObject("plain_text", "Close", false, false)
+		closeBtn := slack.NewButtonBlockElement("", fmt.Sprintf("%s|%s_%d_%s", i.actionHeader("reject"), o.PullRequestID, o.PullRequestNumber, o.Branch), closeBtnTxt)
+		blocks = append(blocks, slack.NewActionBlock("", closeBtn))
+		i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...))
+	}()
+
+	return i.plainBlocks("Now creating pull request..."), nil
 }
 
 func (i InteractorKustomize) BranchList(pj DeployProject, phase string) ([]slack.Block, error) {
@@ -100,10 +60,10 @@ func (i InteractorKustomize) BranchListFromRaw(params string) ([]slack.Block, er
 	return i.branchList(pj, p[1])
 }
 
-func (i InteractorKustomize) SelectBranch(params string, branch string, userID string) ([]slack.Block, error) {
+func (i InteractorKustomize) SelectBranch(params string, branch string, userID string, channel string) ([]slack.Block, error) {
 	p := strings.Split(params, "_")
 	pj := i.projectList.Find(p[0])
-	return i.Request(pj, p[1], branch, userID)
+	return i.Request(pj, p[1], branch, userID, channel)
 }
 
 func (i InteractorKustomize) Approve(params string, userID string, channel string) (blocks []slack.Block, err error) {

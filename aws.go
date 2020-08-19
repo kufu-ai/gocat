@@ -1,16 +1,36 @@
 package main
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ecr"
+	"bytes"
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
+	"text/template"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/lambda"
 )
 
 type ECRClient struct {
 	client *ecr.ECR
+}
+
+type ImageTagVars struct {
+	Branch string
+}
+
+func (self ImageTagVars) Parse(s string) (string, error) {
+	b := bytes.NewBuffer([]byte(""))
+	tmpl, err := template.New("").Parse(s)
+	if err != nil {
+		return "", err
+	}
+	err = tmpl.Execute(b, self)
+	return b.String(), err
 }
 
 func CreateECRInstance() (ECRClient, error) {
@@ -23,22 +43,30 @@ func CreateECRInstance() (ECRClient, error) {
 	return ECRClient{client: ecr.New(sess, aws.NewConfig().WithRegion("ap-northeast-1"))}, nil
 }
 
-func (e ECRClient) DockerImageTag(repo string, branch string) string {
-	imageTag := strings.Replace(branch, "/", "_", -1)
+func (e ECRClient) FindImageTagByRegexp(repo string, rawFilterRegexp string, rawTargetRegexp string, vars ImageTagVars) (string, error) {
+	vars.Branch = strings.Replace(vars.Branch, "/", "_", -1)
+	filterRegexp, err := vars.Parse(rawFilterRegexp)
+	if err != nil {
+		return "", fmt.Errorf("[ERROR] filterRegexp cannot be parsed: %s", rawFilterRegexp)
+	}
+	targetRegexp, err := vars.Parse(rawTargetRegexp)
+	if err != nil {
+		return "", fmt.Errorf("[ERROR] targetRegexp cannot be parsed: %s", rawTargetRegexp)
+	}
 	arr := e.describeImages(&repo, nil)
 	for _, v := range arr {
 		for _, vv1 := range v.ImageTags {
-			if *vv1 == imageTag {
-				for _, vv2 := range v.ImageTags {
-					// git hash (sha1) regex
-					if regexp.MustCompile(`\b[0-9a-f]{5,40}\b`).FindStringSubmatch(*vv2) != nil {
-						return *vv2
-					}
+			if regexp.MustCompile(filterRegexp).FindStringSubmatch(*vv1) == nil {
+				continue
+			}
+			for _, vv2 := range v.ImageTags {
+				if regexp.MustCompile(targetRegexp).FindStringSubmatch(*vv2) != nil {
+					return *vv2, nil
 				}
 			}
 		}
 	}
-	return ""
+	return "", fmt.Errorf("[ERROR] NotFound specified image tag")
 }
 
 func (e ECRClient) describeImages(repo *string, nextToken *string) []*ecr.ImageDetail {
@@ -55,4 +83,47 @@ func (e ECRClient) describeImages(repo *string, nextToken *string) []*ecr.ImageD
 		return append(outputs.ImageDetails, e.describeImages(repo, outputs.NextToken)...)
 	}
 	return outputs.ImageDetails
+}
+
+type LambdaClient struct {
+	client *lambda.Lambda
+}
+
+func CreateLambdaInstance() (LambdaClient, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("ap-northeast-1")},
+	)
+	if err != nil {
+		return LambdaClient{}, err
+	}
+	return LambdaClient{client: lambda.New(sess)}, nil
+}
+
+func (self LambdaClient) Invoke(funcName string, payload string) (*lambda.InvokeOutput, error) {
+	input := &lambda.InvokeInput{
+		FunctionName:   &funcName,
+		Payload:        []byte(payload),
+		InvocationType: aws.String("RequestResponse"),
+	}
+	res, err := self.client.Invoke(input)
+	return res, err
+}
+
+type ECSClient struct {
+	client *ecs.ECS
+}
+
+func CreateECSInstance() (ECSClient, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("ap-northeast-1")},
+	)
+	if err != nil {
+		return ECSClient{}, err
+	}
+	return ECSClient{client: ecs.New(sess)}, nil
+}
+
+func (self ECSClient) DescribeTaskDefinition(arn string) (*ecs.TaskDefinition, error) {
+	o, err := self.client.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{TaskDefinition: &arn})
+	return o.TaskDefinition, err
 }

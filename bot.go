@@ -27,15 +27,20 @@ func main() {
 	projectList := NewProjectList()
 	interactorContext := InteractorContext{projectList: &projectList, userList: &userList, github: github, git: git, client: client, config: Config}
 	interactorFactory := NewInteractorFactory(interactorContext)
-	autoDeploy := AutoDeploy{client, github, git, &projectList}
+	autoDeploy := NewAutoDeploy(client, &github, &git, &projectList)
 
 	log.SetOutput(os.Stdout)
-	listener := SlackListener{client: client, botID: os.Getenv("BOT_ID"), projectList: &projectList, userList: &userList, interactorFactory: &interactorFactory}
 	if Config.EnableAutoDeploy {
 		go autoDeploy.Watch(60)
 	}
-	go listener.ListenAndResponse()
 
+	http.Handle("/events", SlackListener{
+		client:            client,
+		verificationToken: Config.SlackVerificationToken,
+		projectList:       &projectList,
+		userList:          &userList,
+		interactorFactory: &interactorFactory,
+	})
 	http.Handle("/interaction", interactionHandler{
 		verificationToken: Config.SlackVerificationToken,
 		client:            client,
