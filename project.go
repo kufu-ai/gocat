@@ -26,7 +26,7 @@ func (self PayloadVars) Parse(s string) (string, error) {
 type DeployPhase struct {
 	Name          string      `yaml:"name"`
 	Kind          string      `yaml:"kind"`
-	Path          string      `yaml:"path"` // deprecated
+	Path          string      `yaml:"path"` // for job
 	AutoDeploy    bool        `yaml:"autoDeploy"`
 	NotifyChannel string      `yaml:"notifyChannel"`
 	Payload       string      `yaml:"payload"`

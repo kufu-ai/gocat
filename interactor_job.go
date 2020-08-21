@@ -2,22 +2,19 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
-	"time"
 
-	"encoding/json"
 	"github.com/nlopes/slack"
 	batchv1 "k8s.io/api/batch/v1"
-	yaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 type InteractorJob struct {
 	InteractorContext
+	model ModelJob
 }
 
 func NewInteractorJob(i InteractorContext) (o InteractorJob) {
-	o = InteractorJob{i}
+	o = InteractorJob{InteractorContext: i, model: NewModelJob(&i.github)}
 	o.kind = "job"
 	return
 }
@@ -55,55 +52,33 @@ func (i InteractorJob) Approve(params string, userID string, channel string) (bl
 
 func (i InteractorJob) approve(target string, phase string, branch string, userID string, channel string) (blocks []slack.Block, err error) {
 	pj := i.projectList.Find(target)
-	p := pj.FindPhase(phase)
-	rawFile, err := i.github.GetFile(p.Path)
+
+	res, err := i.model.Deploy(pj, phase, DeployOption{Branch: branch})
 	if err != nil {
-		blockObject := slack.NewTextBlockObject("mrkdwn", err.Error(), false, false)
-		blocks = []slack.Block{slack.NewSectionBlock(blockObject, nil, nil)}
+		fields := []slack.AttachmentField{{Title: "error", Value: err.Error()}}
+		msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed to deploy %s %s", pj.ID, phase), Fields: fields}
+		i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
 		return
 	}
 
-	ecr, err := CreateECRInstance()
-	if err != nil {
-		blocks = i.plainBlock(err.Error())
-		return
+	switch do := res.(type) {
+	case ModelJobDeployOutput:
+		go i.model.Watch(do.Name, do.Namespace, channel, func(job batchv1.Job) {
+			if job.Status.Succeeded >= 1 {
+				msg := slack.Attachment{Color: "#36a64f", Title: fmt.Sprintf("Succeed %s Job execution", job.Name)}
+				i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
+				return
+			}
+			if job.Status.Failed >= 1 {
+				msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed %s execution", job.Name)}
+				i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
+				return
+			}
+		})
 	}
-	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: branch})
-	if err != nil {
-		return
-	}
-
-	job := batchv1.Job{}
-	j, err := yaml.ToJSON(rawFile)
-	err = json.Unmarshal(j, &job)
-	if err != nil {
-		blocks = i.plainBlock(err.Error())
-		return
-	}
-
-	if job.Namespace == "" {
-		job.Namespace = "default"
-	}
-	job.Name = job.Name + "-" + RandString(10)
-	for i, container := range job.Spec.Template.Spec.Containers {
-		if container.Image == pj.DockerRepository() {
-			job.Spec.Template.Spec.Containers[i].Image = container.Image + ":" + tag
-		}
-	}
-
-	if err = createJob(&job); err != nil {
-		blocks = i.plainBlock(err.Error())
-		return
-	}
-
-	go i.watchAndNotify(job, channel)
 
 	blocks = i.plainBlocks(
-		fmt.Sprintf("*%s Job Started*", pj.ID),
-		fmt.Sprintf("*Namespace*: %s", job.Namespace),
-		fmt.Sprintf("*Name*: %s", job.Name),
-		fmt.Sprintf("*Path*: %s", p.Path),
-		fmt.Sprintf("*ImageTag*: %s", tag),
+		res.Message(),
 		"by <@"+userID+">",
 	)
 	return
@@ -111,47 +86,4 @@ func (i InteractorJob) approve(target string, phase string, branch string, userI
 
 func (i InteractorJob) Reject(params string, userID string) (blocks []slack.Block, err error) {
 	return
-}
-
-func (i InteractorJob) watchAndNotify(tpl batchv1.Job, channel string) {
-	t := time.NewTicker(time.Duration(20) * time.Second)
-	for {
-		select {
-		case <-t.C:
-			job, err := getJob(tpl.Name, tpl.Namespace)
-			if err != nil {
-				fmt.Println("[ERROR] Quit watching job ", job.Name)
-				t.Stop()
-				return
-			}
-			fmt.Println("[INFO] Watch job", job.Name)
-			if job.Status.Succeeded >= 1 {
-				msg := slack.Attachment{Color: "#36a64f", Text: fmt.Sprintf("Succeed %s Job execution", tpl.Name)}
-				i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
-				t.Stop()
-				return
-			}
-			if job.Status.Failed >= 1 {
-				msg := slack.Attachment{Color: "#e01e5a", Text: fmt.Sprintf("Failed %s execution", tpl.Name)}
-				i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
-				t.Stop()
-				return
-			}
-		}
-	}
-	t.Stop()
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
-var letters = []rune("abcdefghijklmnopqrstuvwxyz1234567890")
-
-func RandString(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
 }
