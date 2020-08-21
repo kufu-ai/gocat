@@ -28,7 +28,7 @@ type DeployOutput interface {
 
 type DeployModelList map[string]DeployModel
 
-func NewDeployModelList(github *GitHub, git *GitDocAWSOperator) *DeployModelList {
+func NewDeployModelList(github *GitHub, git *GitOperator) *DeployModelList {
 	return &DeployModelList{
 		"lambda":    NewModelLambda(),
 		"kustomize": NewModelKustomize(github, git),

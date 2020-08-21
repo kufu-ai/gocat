@@ -12,7 +12,7 @@ type InteractorContext struct {
 	projectList *ProjectList
 	userList    *UserList
 	github      GitHub
-	git         GitDocAWSOperator
+	git         GitOperator
 	client      *slack.Client
 	config      CatConfig
 }

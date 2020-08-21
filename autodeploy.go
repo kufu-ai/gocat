@@ -10,12 +10,12 @@ import (
 type AutoDeploy struct {
 	client      *slack.Client
 	github      *GitHub
-	git         *GitDocAWSOperator
+	git         *GitOperator
 	projectList *ProjectList
 	modelList   *DeployModelList
 }
 
-func NewAutoDeploy(client *slack.Client, github *GitHub, git *GitDocAWSOperator, projectList *ProjectList) AutoDeploy {
+func NewAutoDeploy(client *slack.Client, github *GitHub, git *GitOperator, projectList *ProjectList) AutoDeploy {
 	ml := NewDeployModelList(github, git)
 	return AutoDeploy{client, github, git, projectList, ml}
 }

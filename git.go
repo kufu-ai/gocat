@@ -18,14 +18,14 @@ import (
 	"time"
 )
 
-type GitDocAWSOperator struct {
+type GitOperator struct {
 	auth       transport.AuthMethod
 	repo       string
 	repository *git.Repository
 	username   string
 }
 
-func CreateGitDocAWSOperatorInstance(username, token, repo string) (g GitDocAWSOperator) {
+func CreateGitOperatorInstance(username, token, repo string) (g GitOperator) {
 	g.auth = &http.BasicAuth{
 		Username: username, // yes, this can be anything except an empty string
 		Password: token,
@@ -36,7 +36,7 @@ func CreateGitDocAWSOperatorInstance(username, token, repo string) (g GitDocAWSO
 	return
 }
 
-func (g *GitDocAWSOperator) Clone() error {
+func (g *GitOperator) Clone() error {
 	fs := memfs.New()
 	r, err := git.Clone(memory.NewStorage(), fs, &git.CloneOptions{
 		URL:  g.Repo(),
@@ -50,15 +50,15 @@ func (g *GitDocAWSOperator) Clone() error {
 	return err
 }
 
-func (g GitDocAWSOperator) Repo() string {
+func (g GitOperator) Repo() string {
 	return g.repo
 }
 
-func (g GitDocAWSOperator) DeleteBranch(branch string) (err error) {
+func (g GitOperator) DeleteBranch(branch string) (err error) {
 	return g.repository.Storer.RemoveReference(plumbing.ReferenceName(branch))
 }
 
-func (g GitDocAWSOperator) PushDockerImageTag(id string, target string, phase string, tag string, targetTag string) (branch string, err error) {
+func (g GitOperator) PushDockerImageTag(id string, target string, phase string, tag string, targetTag string) (branch string, err error) {
 	branch = fmt.Sprintf("bot/docker-image-tag-%s-%s-%s", id, phase, tag)
 
 	g.DeleteBranch(branch)
@@ -151,7 +151,7 @@ type OverWrite interface {
 	Update([]byte) (interface{}, error)
 }
 
-func (g GitDocAWSOperator) commit(w *git.Worktree, targetFilePath string, o OverWrite) (err error) {
+func (g GitOperator) commit(w *git.Worktree, targetFilePath string, o OverWrite) (err error) {
 	_, err = w.Filesystem.Stat(targetFilePath)
 	if err != nil {
 		fmt.Println("[INFO] The file does not exist: ", xerrors.New(err.Error()))

@@ -7,10 +7,10 @@ import (
 
 type ModelKustomize struct {
 	github *GitHub
-	git    *GitDocAWSOperator
+	git    *GitOperator
 }
 
-func NewModelKustomize(github *GitHub, git *GitDocAWSOperator) ModelKustomize {
+func NewModelKustomize(github *GitHub, git *GitOperator) ModelKustomize {
 	return ModelKustomize{github: github, git: git}
 }
 
