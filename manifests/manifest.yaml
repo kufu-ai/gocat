@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gocat
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gocat
+  name: gocat
+spec:
+  revisionHistoryLimit: 5
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gocat
+  template:
+    metadata:
+      labels:
+        app: gocat
+    spec:
+      serviceAccountName: gocat
+      containers:
+        image: zaiminc/gocat:1.0-beta1
+        name: gocat
+        ports:
+        - containerPort: 3000
+          name: gocat
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gocat
+  name: gocat
+spec:
+  ports:
+  - name: gocat
+    port: 8080
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app: gocat
+  type: NodePort
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gocat-role
+rules:
+- apiGroups: [""]
+  resources:
+  - configmaps
+  - jobs
+  verbs:
+  - "get"
+  - "list"
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  verbs:
+  - "create"
+  - "get"
+  - "list"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gocat-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gocat-role
+subjects:
+- kind: ServiceAccount
+  name: gocat
