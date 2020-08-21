@@ -16,7 +16,7 @@ type AutoDeploy struct {
 }
 
 func NewAutoDeploy(client *slack.Client, github *GitHub, git *GitOperator, projectList *ProjectList) AutoDeploy {
-	ml := NewDeployModelList(github, git)
+	ml := NewDeployModelList(github, git, projectList)
 	return AutoDeploy{client, github, git, projectList, ml}
 }
 

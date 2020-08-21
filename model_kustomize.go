@@ -100,9 +100,11 @@ func (self ModelKustomize) Deploy(pj DeployProject, phase string, option DeployO
 	if err != nil {
 		return
 	}
-	err = self.Commit(o.PullRequestID)
-	if err != nil {
-		return
+	if o.Status() == DeployStatusSuccess {
+		err = self.Commit(o.PullRequestID)
+		if err != nil {
+			return
+		}
 	}
 	return o, nil
 }

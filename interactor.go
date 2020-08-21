@@ -20,10 +20,11 @@ type InteractorFactory struct {
 	jenkins   InteractorJenkins
 	job       InteractorJob
 	lambda    InteractorLambda
+	combine   InteractorCombine
 }
 
 func NewInteractorFactory(c InteractorContext) InteractorFactory {
-	return InteractorFactory{kustomize: NewInteractorKustomize(c), jenkins: NewInteractorJenkins(c), job: NewInteractorJob(c), lambda: NewInteractorLambda(c)}
+	return InteractorFactory{kustomize: NewInteractorKustomize(c), jenkins: NewInteractorJenkins(c), job: NewInteractorJob(c), lambda: NewInteractorLambda(c), combine: NewInteractorCombine(c)}
 }
 
 func (i InteractorFactory) Get(pj DeployProject, phase string) DeployUsecase {
@@ -41,6 +42,8 @@ func (i InteractorFactory) get(kind string) DeployUsecase {
 		return i.job
 	case "lambda":
 		return i.lambda
+	case "combine":
+		return i.combine
 	default:
 		return i.jenkins
 	}
@@ -54,6 +57,8 @@ func (i InteractorFactory) GetByParams(params string) DeployUsecase {
 		return i.job
 	case strings.Contains(params, "lambda"):
 		return i.lambda
+	case strings.Contains(params, "combine"):
+		return i.combine
 	default:
 		return i.jenkins
 	}
