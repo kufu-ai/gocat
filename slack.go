@@ -129,20 +129,16 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 }
 
 func (s *SlackListener) helpMessage() slack.MsgOption {
-	headerText := slack.NewTextBlockObject("mrkdwn", ":zaim:", false, false)
-	headerSection := slack.NewSectionBlock(headerText, nil, nil)
-
-	deployMasterText := slack.NewTextBlockObject("mrkdwn", "*masterのデプロイ*\n`@zaim-cat deploy api staging`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionに置換可能です。\nコマンド入力後にデプロイするかの確認ボタンが出てきます。", false, false)
+	deployMasterText := slack.NewTextBlockObject("mrkdwn", "*masterのデプロイ*\n`@bot-name deploy api staging`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionに置換可能です。\nコマンド入力後にデプロイするかの確認ボタンが出てきます。", false, false)
 	deployMasterSection := slack.NewSectionBlock(deployMasterText, nil, nil)
 
-	deployBranchText := slack.NewTextBlockObject("mrkdwn", "*ブランチのデプロイ*\n`@zaim-cat deploy api staging branch`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionに置換可能です。\nブランチを選択するドロップダウンが出てきます。\nブランチ選択後にデプロイするかの確認ボタンが出てきます。", false, false)
+	deployBranchText := slack.NewTextBlockObject("mrkdwn", "*ブランチのデプロイ*\n`@bot-name deploy api staging branch`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionに置換可能です。\nブランチを選択するドロップダウンが出てきます。\nブランチ選択後にデプロイするかの確認ボタンが出てきます。", false, false)
 	deployBranchSection := slack.NewSectionBlock(deployBranchText, nil, nil)
 
-	deployText := slack.NewTextBlockObject("mrkdwn", "*デプロイ対象の選択をSlackのUIから選択するデプロイ手法*\n`@zaim-cat deploy staging`\nstagingの部分はproductionに置換可能です。\nデプロイ対象の選択後にデプロイするブランチの選択肢が出てきます。", false, false)
+	deployText := slack.NewTextBlockObject("mrkdwn", "*デプロイ対象の選択をSlackのUIから選択するデプロイ手法*\n`@bot-name deploy staging`\nstagingの部分はproductionに置換可能です。\nデプロイ対象の選択後にデプロイするブランチの選択肢が出てきます。", false, false)
 	deploySection := slack.NewSectionBlock(deployText, nil, nil)
 
 	return slack.MsgOptionBlocks(
-		headerSection,
 		deployMasterSection,
 		deployBranchSection,
 		deploySection,
