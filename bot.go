@@ -22,7 +22,7 @@ func main() {
 		slack.OptionLog(log.New(os.Stdout, "slack-bot: ", log.Lshortfile|log.LstdFlags)),
 	)
 	github := CreateGitHubInstance(Config.GitHubAccessToken, Config.ManifestRepositoryOrg, Config.ManifestRepositoryName)
-	git := CreateGitDocAWSOperatorInstance(Config.GitHubAccessToken, Config.ManifestRepository)
+	git := CreateGitDocAWSOperatorInstance(Config.GitHubUserName, Config.GitHubAccessToken, Config.ManifestRepository)
 	userList := UserList{github: github, slackClient: client}
 	projectList := NewProjectList()
 	interactorContext := InteractorContext{projectList: &projectList, userList: &userList, github: github, git: git, client: client, config: Config}

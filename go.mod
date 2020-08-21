@@ -1,4 +1,4 @@
-module github.com/zaiminc/slack-bot
+module github.com/zaiminc/gocat
 
 go 1.14
 

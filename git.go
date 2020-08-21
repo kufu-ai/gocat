@@ -22,14 +22,16 @@ type GitDocAWSOperator struct {
 	auth       transport.AuthMethod
 	repo       string
 	repository *git.Repository
+	username   string
 }
 
-func CreateGitDocAWSOperatorInstance(token string, repo string) (g GitDocAWSOperator) {
+func CreateGitDocAWSOperatorInstance(username, token, repo string) (g GitDocAWSOperator) {
 	g.auth = &http.BasicAuth{
-		Username: "bot-zaim", // yes, this can be anything except an empty string
+		Username: username, // yes, this can be anything except an empty string
 		Password: token,
 	}
 	g.repo = repo
+	g.username = username
 	g.Clone()
 	return
 }
@@ -112,7 +114,7 @@ func (g GitDocAWSOperator) PushDockerImageTag(id string, target string, phase st
 		fmt.Sprintf("Change docker image tag. target: %s, phase: %s, tag: %s.", target, phase, tag),
 		&git.CommitOptions{
 			Author: &object.Signature{
-				Name:  "bot-zaim",
+				Name:  g.username,
 				Email: "",
 				When:  time.Now(),
 			},

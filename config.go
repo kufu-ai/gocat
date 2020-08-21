@@ -11,6 +11,7 @@ type CatConfig struct {
 	ManifestRepository     string
 	ManifestRepositoryName string
 	ManifestRepositoryOrg  string
+	GitHubUserName         string // optional (default: gocat)
 	GitHubAccessToken      string
 	SlackOAuthToken        string
 	SlackVerificationToken string
@@ -53,8 +54,12 @@ func InitConfig() (err error) {
 	Config.EnableAutoDeploy = os.Getenv("CONFIG_ENABLE_AUTO_DEPLOY") == "true"
 	Config.ArgoCDHost = os.Getenv("CONFIG_ARGOCD_HOST")
 	Config.JenkinsHost = os.Getenv("CONFIG_JENKINS_HOST")
+	Config.GitHubUserName = os.Getenv("CONFIG_GITHUB_USER_NAME")
 	Config.ManifestRepositoryName = findRepositoryName(Config.ManifestRepository)
 	Config.ManifestRepositoryOrg = findRepositoryOrg(Config.ManifestRepository)
+	if Config.GitHubUserName == "" {
+		Config.GitHubUserName = "gocat"
+	}
 
 	switch os.Getenv("SECRET_STORE") {
 	case "aws/secrets-manager":
