@@ -43,6 +43,7 @@ type DeployProject struct {
 	dockerRegistry   string
 	filterRegexp     string
 	targetRegexp     string
+	steps            []string
 	Alias            string
 	Phases           []DeployPhase
 }
@@ -72,6 +73,10 @@ func (pj DeployProject) FuncName() string {
 	return pj.funcName
 }
 
+func (pj DeployProject) Steps() []string {
+	return pj.steps
+}
+
 func (pj DeployProject) FilterRegexp() string {
 	if pj.filterRegexp == "" {
 		return "^{{.Branch}}$"
@@ -92,6 +97,9 @@ func (pj DeployProject) DockerRepository() string {
 
 func (pj DeployProject) ECRRepository() string {
 	path := strings.Split(pj.dockerRegistry, "/")
+	if len(path) != 2 {
+		return ""
+	}
 	return path[1]
 }
 
@@ -119,6 +127,7 @@ func (p *ProjectList) Reload() {
 		pj.targetRegexp = cm.Data["TargetRegexp"]
 		pj.funcName = cm.Data["FuncName"]
 		pj.Alias = cm.Data["Alias"]
+		yaml.Unmarshal([]byte(cm.Data["Steps"]), &pj.steps)
 		yaml.Unmarshal([]byte(cm.Data["Phases"]), &pj.Phases)
 		for i, phase := range pj.Phases {
 			if phase.Kind == "" {
@@ -140,6 +149,17 @@ func (p *ProjectList) Reload() {
 		tmp = append(tmp, pj)
 	}
 	p.Items = tmp
+}
+
+func (p ProjectList) FindAll(ids []string) (o []DeployProject) {
+	for _, id := range ids {
+		for _, pj := range p.Items {
+			if pj.ID == id {
+				o = append(o, pj)
+			}
+		}
+	}
+	return o
 }
 
 func (p ProjectList) Find(id string) DeployProject {
