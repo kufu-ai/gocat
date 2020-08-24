@@ -1,14 +1,20 @@
-FROM golang:1.14.3-stretch
+FROM golang:1.15.0-alpine AS build
 
-RUN mkdir /bot
-WORKDIR /bot
+RUN apk add --update git libc-dev upx
 
-COPY go.mod .
-COPY go.sum .
+WORKDIR /src
 
+COPY go.* ./
 RUN go mod download
 
 COPY . .
-RUN go build
 
-CMD ./slack-bot
+RUN go build -o ./gocat
+
+FROM alpine
+
+WORKDIR /src
+COPY --from=build /src/gocat /src/gocat
+
+CMD /src/gocat
+
