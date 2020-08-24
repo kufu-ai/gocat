@@ -20,7 +20,12 @@ func getConfigMapList(t string) (cml *v1.ConfigMapList) {
 		return
 	}
 
-	cml, err = client.CoreV1().ConfigMaps("default").List(context.Background(), meta_v1.ListOptions{LabelSelector: fmt.Sprintf("gocat.zaim.net/configmap-type=%s", t)})
+	ns := os.Getenv("CONFIG_NAMESPACE")
+	if ns == "" {
+		ns = "default"
+	}
+
+	cml, err = client.CoreV1().ConfigMaps(ns).List(context.Background(), meta_v1.ListOptions{LabelSelector: fmt.Sprintf("gocat.zaim.net/configmap-type=%s", t)})
 	if err != nil {
 		log.Print("[ERROR] ", err)
 		return

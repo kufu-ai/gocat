@@ -8,6 +8,7 @@
 |CONFIG_MANIFEST_REPOSITORY_ORG| Organization of manifest repository (like `zaiminc`)|false|
 |CONFIG_ARGOCD_HOST| Set your ArgoCD host. |false|
 |CONFIG_JENKINS_HOST| Set your Jenkins host. |false|
+|CONFIG_NAMESPACE| Set ConfigMap namespace |false|
 
 ## Secret
 You can use env or AWS Secrets Manager as secret store (default: env).
