@@ -55,7 +55,10 @@ func (i InteractorJob) approve(target string, phase string, branch string, userI
 
 	res, err := i.model.Deploy(pj, phase, DeployOption{Branch: branch})
 	if err != nil {
-		fields := []slack.AttachmentField{{Title: "error", Value: err.Error()}}
+		fields := []slack.AttachmentField{
+			{Title: "user", Value: "<@" + userID + ">"},
+			{Title: "error", Value: err.Error()},
+		}
 		msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed to deploy %s %s", pj.ID, phase), Fields: fields}
 		i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
 		return
@@ -64,13 +67,14 @@ func (i InteractorJob) approve(target string, phase string, branch string, userI
 	switch do := res.(type) {
 	case ModelJobDeployOutput:
 		go i.model.Watch(do.Name, do.Namespace, channel, func(job batchv1.Job) {
+			fields := []slack.AttachmentField{{Title: "user", Value: "<@" + userID + ">"}}
 			if job.Status.Succeeded >= 1 {
-				msg := slack.Attachment{Color: "#36a64f", Title: fmt.Sprintf("Succeed %s Job execution", job.Name)}
+				msg := slack.Attachment{Color: "#36a64f", Title: fmt.Sprintf("Succeed %s Job execution", job.Name), Fields: fields}
 				i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
 				return
 			}
 			if job.Status.Failed >= 1 {
-				msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed %s execution", job.Name)}
+				msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed %s execution", job.Name), Fields: fields}
 				i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
 				return
 			}
