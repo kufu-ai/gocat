@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/nlopes/slack"
 	"log"
 	"time"
@@ -66,7 +65,13 @@ func (a AutoDeploy) CheckAndDeploy() {
 					return
 				}
 				if phase.NotifyChannel != "" {
-					a.client.PostMessage(phase.NotifyChannel, a.slackMessage(fmt.Sprintf("%s:%s %s is Deployed", dp.ID, tag, phase.Name)))
+					fields := []slack.AttachmentField{
+						{Title: "Project", Value: dp.ID, Short: true},
+						{Title: "Phase", Value: phase.Name, Short: true},
+						{Title: "Tag", Value: tag, Short: true},
+					}
+					msg := slack.Attachment{Color: "#36a64f", Title: ":white_check_mark: Succeed to auto deploy", Fields: fields}
+					a.client.PostMessage(phase.NotifyChannel, slack.MsgOptionAttachments(msg))
 				}
 			}()
 		}
