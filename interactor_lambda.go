@@ -38,15 +38,19 @@ func (self InteractorLambda) approve(target string, phase string, branch string,
 	go func() {
 		res, err := self.model.Deploy(pj, phase, DeployOption{Branch: branch})
 		if err != nil || res.Status() == DeployStatusFail {
-			fields := []slack.AttachmentField{{Title: "error", Value: err.Error()}}
+			fields := []slack.AttachmentField{
+				{Title: "user", Value: "<@" + userID + ">"},
+				{Title: "error", Value: err.Error()},
+			}
 			msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed to deploy %s %s", pj.ID, phase), Fields: fields}
 			self.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
 			return
 		}
 
 		msg := slack.Attachment{Color: "#36a64f", Title: fmt.Sprintf("Succeed to deploy %s %s", pj.ID, phase)}
+		msg.Fields = []slack.AttachmentField{{Title: "user", Value: "<@" + userID + ">"}}
 		if res.Message() != "" {
-			msg.Fields = []slack.AttachmentField{{Title: "response", Value: res.Message()}}
+			msg.Fields = append(msg.Fields, slack.AttachmentField{Title: "response", Value: res.Message()})
 		}
 		self.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
 		return
