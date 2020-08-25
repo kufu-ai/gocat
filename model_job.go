@@ -47,7 +47,7 @@ func (self ModelJob) Deploy(pj DeployProject, phase string, option DeployOption)
 	if err != nil {
 		return o, err
 	}
-	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch})
+	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch, Phase: phase})
 	if err != nil {
 		return o, err
 	}

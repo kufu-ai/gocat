@@ -38,7 +38,7 @@ func (self ModelLambda) Deploy(pj DeployProject, phase string, option DeployOpti
 	if err != nil {
 		return
 	}
-	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch})
+	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch, Phase: phase})
 	if err != nil {
 		return
 	}

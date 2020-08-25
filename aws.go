@@ -21,6 +21,7 @@ type ECRClient struct {
 
 type ImageTagVars struct {
 	Branch string
+	Phase  string
 }
 
 func (self ImageTagVars) Parse(s string) (string, error) {
