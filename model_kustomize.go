@@ -35,7 +35,7 @@ func (self ModelKustomize) Prepare(pj DeployProject, phase string, branch string
 	if err != nil {
 		return
 	}
-	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: branch})
+	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: branch, Phase: phase})
 	if err != nil {
 		return
 	}
