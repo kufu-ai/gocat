@@ -46,12 +46,14 @@ func (self DestinationECS) GetCurrentRevision(input GetCurrentRevisionInput) (st
 		return "", err
 	}
 	for _, container := range td.ContainerDefinitions {
-		if container.Image != nil && *container.Image == self.Image {
+		if container.Image != nil {
 			im := strings.Split(*container.Image, ":")
 			if len(im) != 2 {
 				return "", fmt.Errorf("[ERROR] Invalid image name")
 			}
-			return im[1], nil
+			if im[0] == self.Image {
+				return im[1], nil
+			}
 		}
 	}
 	return "", fmt.Errorf("[ERROR] NotFound specified image")
