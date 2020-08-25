@@ -59,14 +59,16 @@ func (a AutoDeploy) CheckAndDeploy() {
 				log.Print(err)
 				continue
 			}
-			_, err = model.Deploy(dp, phase.Name, DeployOption{Branch: "master"})
-			if err != nil {
-				log.Print(err)
-				continue
-			}
-			if phase.NotifyChannel != "" {
-				a.client.PostMessage(phase.NotifyChannel, a.slackMessage(fmt.Sprintf("%s:%s %s is Deployed", dp.ID, tag, phase.Name)))
-			}
+			go func() {
+				_, err = model.Deploy(dp, phase.Name, DeployOption{Branch: "master"})
+				if err != nil {
+					log.Print(err)
+					return
+				}
+				if phase.NotifyChannel != "" {
+					a.client.PostMessage(phase.NotifyChannel, a.slackMessage(fmt.Sprintf("%s:%s %s is Deployed", dp.ID, tag, phase.Name)))
+				}
+			}()
 		}
 	}
 }
