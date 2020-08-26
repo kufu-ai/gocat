@@ -64,14 +64,18 @@ func (self InteractorCombine) Reject(params string, userID string) (blocks []sla
 	return
 }
 
-func (self InteractorCombine) BranchList(DeployProject, string) (blocks []slack.Block, err error) {
-	return self.plainBlocks("ブランチデプロイには対応していません"), nil
+func (self InteractorCombine) BranchList(pj DeployProject, phase string) ([]slack.Block, error) {
+	return self.branchList(pj, phase)
 }
 
-func (self InteractorCombine) BranchListFromRaw(string) (blocks []slack.Block, err error) {
-	return self.plainBlocks("ブランチデプロイには対応していません"), nil
+func (self InteractorCombine) BranchListFromRaw(params string) (blocks []slack.Block, err error) {
+	p := strings.Split(params, "_")
+	pj := self.projectList.Find(p[0])
+	return self.branchList(pj, p[1])
 }
 
-func (self InteractorCombine) SelectBranch(string, string, string, string) (blocks []slack.Block, err error) {
-	return self.plainBlocks("ブランチデプロイには対応していません"), nil
+func (self InteractorCombine) SelectBranch(params string, branch string, userID string, channel string) ([]slack.Block, error) {
+	p := strings.Split(params, "_")
+	pj := self.projectList.Find(p[0])
+	return self.Request(pj, p[1], branch, userID, channel)
 }
