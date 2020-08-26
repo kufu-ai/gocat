@@ -102,11 +102,11 @@ func (h interactionHandler) Deploy(w http.ResponseWriter, interactionRequest sla
 	var err error
 	switch {
 	case strings.Contains(params[0], "approve"):
-		blocks, err = interactor.Approve(params[1], userID, interactionRequest.Channel.Name)
+		blocks, err = interactor.Approve(params[1], userID, interactionRequest.Channel.ID)
 	case strings.Contains(params[0], "reject"):
 		blocks, err = interactor.Reject(params[1], userID)
 	case strings.Contains(params[0], "selectbranch"):
-		blocks, err = interactor.SelectBranch(params[1], interactionRequest.ActionCallback.BlockActions[0].SelectedOption.Text.Text, userID, interactionRequest.Channel.Name)
+		blocks, err = interactor.SelectBranch(params[1], interactionRequest.ActionCallback.BlockActions[0].SelectedOption.Text.Text, userID, interactionRequest.Channel.ID)
 	case strings.Contains(params[0], "branchlist"):
 		blocks, err = interactor.BranchListFromRaw(params[1])
 	default:
