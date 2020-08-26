@@ -66,14 +66,16 @@ func (self InteractorLambda) Reject(params string, userID string) (blocks []slac
 	return
 }
 
-func (self InteractorLambda) BranchList(DeployProject, string) (blocks []slack.Block, err error) {
-	return self.plainBlocks("ブランチデプロイには対応していません"), nil
+func (self InteractorLambda) BranchList(pj DeployProject, phase string) ([]slack.Block, error) {
+	return self.branchList(pj, phase)
 }
 
 func (self InteractorLambda) BranchListFromRaw(string) (blocks []slack.Block, err error) {
 	return self.plainBlocks("ブランチデプロイには対応していません"), nil
 }
 
-func (self InteractorLambda) SelectBranch(string, string, string, string) (blocks []slack.Block, err error) {
-	return self.plainBlocks("ブランチデプロイには対応していません"), nil
+func (self InteractorLambda) SelectBranch(params string, branch string, userID string, channel string) ([]slack.Block, error) {
+	p := strings.Split(params, "_")
+	pj := self.projectList.Find(p[0])
+	return self.Request(pj, p[1], branch, userID, channel)
 }

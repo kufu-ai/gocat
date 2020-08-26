@@ -168,16 +168,17 @@ func (s *SlackListener) SelectDeployTarget(phase string) slack.MsgOption {
 	sections := make([]slack.Block, len(s.projectList.Items)+2)
 	sections[0] = headerSection
 	for i, pj := range s.projectList.Items {
-		sections[i+1] = createDeployButtonSection(pj.GitHubRepository(), pj.ID, phase)
+		sections[i+1] = createDeployButtonSection(pj, phase)
 	}
 	sections[len(sections)-1] = CloseButton()
 	return slack.MsgOptionBlocks(sections...)
 }
 
-func createDeployButtonSection(repo string, target string, phase string) *slack.SectionBlock {
-	txt := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*%s* (%s)", target, repo), false, false)
+func createDeployButtonSection(pj DeployProject, phaseName string) *slack.SectionBlock {
+	phase := pj.FindPhase(phaseName)
+	txt := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*%s* (%s)", pj.ID, pj.GitHubRepository()), false, false)
 	btnTxt := slack.NewTextBlockObject("plain_text", "Deploy", false, false)
-	btn := slack.NewButtonBlockElement("", fmt.Sprintf("deploy_target_branchlist|%s_%s", target, phase), btnTxt)
+	btn := slack.NewButtonBlockElement("", fmt.Sprintf("deploy_%s_branchlist|%s_%s", phase.Kind, pj.ID, phase.Name), btnTxt)
 	section := slack.NewSectionBlock(txt, nil, slack.NewAccessory(btn))
 	return section
 }
