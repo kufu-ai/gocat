@@ -31,7 +31,7 @@ func main() {
 
 	log.SetOutput(os.Stdout)
 	if Config.EnableAutoDeploy {
-		go autoDeploy.Watch(60)
+		autoDeploy.Watch(60)
 	}
 
 	http.Handle("/events", SlackListener{
