@@ -97,10 +97,10 @@ func (pj DeployProject) DockerRepository() string {
 
 func (pj DeployProject) ECRRepository() string {
 	path := strings.Split(pj.dockerRegistry, "/")
-	if len(path) != 2 {
+	if len(path) < 2 {
 		return ""
 	}
-	return path[1]
+	return strings.Join(path[1:], "/")
 }
 
 type ProjectList struct {
