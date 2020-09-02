@@ -64,7 +64,7 @@ func (self ModelKustomize) Prepare(pj DeployProject, phase string, branch string
 		commitlog = commitlog + "- " + m + "\n"
 	}
 
-	prBranch, err := self.git.PushDockerImageTag(pj.ID, pj.K8SMetadata(), phase, tag, pj.DockerRepository())
+	prBranch, err := self.git.PushDockerImageTag(pj.ID, ph, tag, pj.DockerRepository())
 	if err != nil {
 		return
 	}

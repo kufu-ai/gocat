@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sigs.k8s.io/kustomize/api/types"
+	"strings"
 	"time"
 )
 
@@ -58,8 +59,8 @@ func (g GitOperator) DeleteBranch(branch string) (err error) {
 	return g.repository.Storer.RemoveReference(plumbing.ReferenceName(branch))
 }
 
-func (g GitOperator) PushDockerImageTag(id string, target string, phase string, tag string, targetTag string) (branch string, err error) {
-	branch = fmt.Sprintf("bot/docker-image-tag-%s-%s-%s", id, phase, tag)
+func (g GitOperator) PushDockerImageTag(id string, phase DeployPhase, tag string, targetTag string) (branch string, err error) {
+	branch = fmt.Sprintf("bot/docker-image-tag-%s-%s-%s", id, phase.Name, tag)
 
 	g.DeleteBranch(branch)
 	if err != nil {
@@ -98,20 +99,20 @@ func (g GitOperator) PushDockerImageTag(id string, target string, phase string, 
 		return
 	}
 
-	err = g.commit(w, fmt.Sprintf("%s/%s/kustomization.yaml", target, phase), KustomizationOverWrite{tag, targetTag})
+	err = g.commit(w, phase.Path, KustomizationOverWrite{tag, targetTag})
 	if err != nil {
 		fmt.Println("[ERROR] Failed to Marshal kustomize.yaml: ", xerrors.New(err.Error()))
 		return
 	}
 
-	err = g.commit(w, fmt.Sprintf("%s/%s/configmap.yaml", target, phase), MemcachedOverWrite{})
+	err = g.commit(w, strings.Replace(phase.Path, "kustomization.yaml", "configmap.yaml", -1), MemcachedOverWrite{})
 	if err != nil {
 		fmt.Println("[ERROR] Failed to Write MEMCACHED_PREFIX \\n: ", xerrors.New(err.Error()))
 		return
 	}
 
 	hash, _ := w.Commit(
-		fmt.Sprintf("Change docker image tag. target: %s, phase: %s, tag: %s.", target, phase, tag),
+		fmt.Sprintf("Change docker image tag. target: %s, phase: %s, tag: %s.", phase.Path, phase.Name, tag),
 		&git.CommitOptions{
 			Author: &object.Signature{
 				Name:  g.username,

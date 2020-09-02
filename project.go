@@ -39,7 +39,6 @@ type DeployProject struct {
 	jenkinsJob       string
 	funcName         string // for Lambda
 	gitHubRepository string
-	manifestPath     string
 	dockerRegistry   string
 	filterRegexp     string
 	targetRegexp     string
@@ -63,10 +62,6 @@ func (pj DeployProject) JenkinsJob() string {
 
 func (pj DeployProject) GitHubRepository() string {
 	return pj.gitHubRepository
-}
-
-func (pj DeployProject) K8SMetadata() string {
-	return pj.manifestPath
 }
 
 func (pj DeployProject) FuncName() string {
@@ -121,7 +116,6 @@ func (p *ProjectList) Reload() {
 		pj.Kind = cm.Data["Kind"]
 		pj.jenkinsJob = cm.Data["JenkinsJob"]
 		pj.gitHubRepository = cm.Data["GitHubRepository"]
-		pj.manifestPath = cm.Data["ManifestPath"]
 		pj.dockerRegistry = cm.Data["DockerRegistry"]
 		pj.filterRegexp = cm.Data["FilterRegexp"]
 		pj.targetRegexp = cm.Data["TargetRegexp"]
