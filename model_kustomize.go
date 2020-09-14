@@ -29,15 +29,17 @@ func (self ModelKustomizePrepareOutput) Message() string {
 	return "Success to deploy"
 }
 
-func (self ModelKustomize) Prepare(pj DeployProject, phase string, branch string, assigner User) (o ModelKustomizePrepareOutput, err error) {
+func (self ModelKustomize) Prepare(pj DeployProject, phase string, branch string, assigner User, tag string) (o ModelKustomizePrepareOutput, err error) {
 	o.status = DeployStatusFail
-	ecr, err := CreateECRInstance()
-	if err != nil {
-		return
-	}
-	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: branch, Phase: phase})
-	if err != nil {
-		return
+	if tag == "" {
+		ecr, err := CreateECRInstance()
+		if err != nil {
+			return o, err
+		}
+		tag, err = ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: branch, Phase: phase})
+		if err != nil {
+			return o, err
+		}
 	}
 
 	ph := pj.FindPhase(phase)
@@ -96,7 +98,7 @@ func (self ModelKustomize) Commit(pullRequestID string) error {
 }
 
 func (self ModelKustomize) Deploy(pj DeployProject, phase string, option DeployOption) (do DeployOutput, err error) {
-	o, err := self.Prepare(pj, phase, option.Branch, option.Assigner)
+	o, err := self.Prepare(pj, phase, option.Branch, option.Assigner, option.Tag)
 	if err != nil {
 		return
 	}

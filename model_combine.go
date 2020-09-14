@@ -41,6 +41,15 @@ func (self ModelCombineOutput) Message() string {
 
 func (self ModelCombine) Deploy(pj DeployProject, phase string, option DeployOption) (DeployOutput, error) {
 	o := ModelCombineOutput{}
+	ecr, err := CreateECRInstance()
+	if err != nil {
+		return o, err
+	}
+	option.Tag, err = ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch, Phase: phase})
+	if err != nil {
+		return o, err
+	}
+
 	steps := self.projectList.FindAll(pj.Steps())
 	for i, step := range steps {
 		p := step.FindPhase(phase)

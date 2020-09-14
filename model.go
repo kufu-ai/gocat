@@ -11,6 +11,7 @@ type DeployModel interface {
 type DeployOption struct {
 	Branch   string
 	Assigner User
+	Tag      string
 }
 
 type DeployStatus uint

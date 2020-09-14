@@ -34,13 +34,16 @@ func (self ModelLambda) Deploy(pj DeployProject, phase string, option DeployOpti
 	if err != nil {
 		return
 	}
-	ecr, err := CreateECRInstance()
-	if err != nil {
-		return
-	}
-	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch, Phase: phase})
-	if err != nil {
-		return
+	tag := option.Tag
+	if tag == "" {
+		ecr, err := CreateECRInstance()
+		if err != nil {
+			return o, err
+		}
+		tag, err = ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch, Phase: phase})
+		if err != nil {
+			return o, err
+		}
 	}
 	ph := pj.FindPhase(phase)
 	payload, err := PayloadVars{Tag: tag}.Parse(ph.Payload)
