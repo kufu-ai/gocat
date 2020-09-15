@@ -43,13 +43,16 @@ func (self ModelJob) Deploy(pj DeployProject, phase string, option DeployOption)
 		return o, err
 	}
 
-	ecr, err := CreateECRInstance()
-	if err != nil {
-		return o, err
-	}
-	tag, err := ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch, Phase: phase})
-	if err != nil {
-		return o, err
+	tag := option.Tag
+	if tag == "" {
+		ecr, err := CreateECRInstance()
+		if err != nil {
+			return o, err
+		}
+		tag, err = ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch, Phase: phase})
+		if err != nil {
+			return o, err
+		}
 	}
 
 	job := batchv1.Job{}

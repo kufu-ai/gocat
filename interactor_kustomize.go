@@ -23,7 +23,7 @@ func (i InteractorKustomize) Request(pj DeployProject, phase string, branch stri
 	user := i.userList.FindBySlackUserID(assigner)
 
 	go func() {
-		o, err := i.model.Prepare(pj, phase, branch, user)
+		o, err := i.model.Prepare(pj, phase, branch, user, "")
 		if err != nil {
 			blocks := i.plainBlocks(err.Error())
 			i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...))
