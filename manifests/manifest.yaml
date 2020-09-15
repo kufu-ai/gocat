@@ -23,7 +23,7 @@ spec:
     spec:
       serviceAccountName: gocat
       containers:
-      - image: zaiminc/gocat:v0.1.2
+      - image: zaiminc/gocat:latest
         name: gocat
         ports:
         - containerPort: 3000

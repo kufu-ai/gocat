@@ -1,2 +1,6 @@
 resources:
 - manifest.yaml
+images:
+- name: zaiminc/gocat
+  newName: zaiminc/gocat
+  newTag: latest
