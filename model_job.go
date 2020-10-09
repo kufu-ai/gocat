@@ -76,6 +76,13 @@ func (self ModelJob) Deploy(pj DeployProject, phase string, option DeployOption)
 		return o, err
 	}
 
+	if option.Wait == true {
+		err = self.Watch(job.Name, job.Namespace)
+		if err != nil {
+			return o, err
+		}
+	}
+
 	o.status = DeployStatusSuccess
 	o.Namespace = job.Namespace
 	o.Name = job.Name
@@ -84,8 +91,9 @@ func (self ModelJob) Deploy(pj DeployProject, phase string, option DeployOption)
 	return o, nil
 }
 
-func (self ModelJob) Watch(name, namespace, channel string, callback func(batchv1.Job)) {
+func (self ModelJob) Watch(name, namespace string) error {
 	t := time.NewTicker(time.Duration(20) * time.Second)
+	log.Println("[INFO] Watch job", name)
 	for {
 		select {
 		case <-t.C:
@@ -93,17 +101,20 @@ func (self ModelJob) Watch(name, namespace, channel string, callback func(batchv
 			if err != nil {
 				log.Println("[ERROR] Quit watching job ", job.Name)
 				t.Stop()
-				return
+				return err
 			}
-			log.Println("[INFO] Watch job", job.Name)
-			if job.Status.Succeeded >= 1 || job.Status.Failed >= 1 {
-				callback(*job)
+			if job.Status.Succeeded >= 1 {
 				t.Stop()
-				return
+				return nil
+			}
+			if job.Status.Failed >= 1 {
+				t.Stop()
+				return fmt.Errorf("[ERROR] Failed %s execution", job.Name)
 			}
 		}
 	}
 	t.Stop()
+	return nil
 }
 
 func init() {
