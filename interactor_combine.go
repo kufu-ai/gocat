@@ -37,7 +37,7 @@ func (self InteractorCombine) approve(target string, phase string, branch string
 	user := self.userList.FindBySlackUserID(userID)
 
 	go func() {
-		res, err := self.model.Deploy(pj, phase, DeployOption{Branch: branch, Assigner: user})
+		res, err := self.model.Deploy(pj, phase, DeployOption{Branch: branch, Assigner: user, Wait: true})
 		if err != nil || res.Status() == DeployStatusFail {
 			fields := []slack.AttachmentField{
 				{Title: "user", Value: "<@" + userID + ">"},

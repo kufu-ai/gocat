@@ -63,7 +63,7 @@ func InitConfig() (err error) {
 
 	switch os.Getenv("SECRET_STORE") {
 	case "aws/secrets-manager":
-		log.Print("Useing aws/secrets-manager as secret store. Set SECRET_STORE env if you want to use another secret store")
+		log.Print("Using aws/secrets-manager as secret store. Set SECRET_STORE env if you want to use another secret store")
 		if os.Getenv("SECRET_NAME") == "" {
 			return fmt.Errorf("Set SECRET_NAME environment variable")
 		}
@@ -76,7 +76,7 @@ func InitConfig() (err error) {
 		return
 
 	default:
-		log.Print("Useing env as secret store. Set SECRET_STORE env if you want to use another secret store")
+		log.Print("Using env as secret store. Set SECRET_STORE env if you want to use another secret store")
 		envs := []string{"CONFIG_GITHUB_ACCESS_TOKEN", "CONFIG_SLACK_OAUTH_TOKEN", "CONFIG_SLACK_VERIFICATION_TOKEN", "CONFIG_JENKINS_BOT_TOKEN", "CONFIG_JENKINS_JOB_TOKEN"}
 		for _, env := range envs {
 			if os.Getenv(env) == "" {

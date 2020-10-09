@@ -12,6 +12,7 @@ type DeployOption struct {
 	Branch   string
 	Assigner User
 	Tag      string
+	Wait     bool
 }
 
 type DeployStatus uint

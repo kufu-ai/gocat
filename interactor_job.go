@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/nlopes/slack"
-	batchv1 "k8s.io/api/batch/v1"
 )
 
 type InteractorJob struct {
@@ -66,19 +65,17 @@ func (i InteractorJob) approve(target string, phase string, branch string, userI
 
 	switch do := res.(type) {
 	case ModelJobDeployOutput:
-		go i.model.Watch(do.Name, do.Namespace, channel, func(job batchv1.Job) {
+		go func() {
+			err := i.model.Watch(do.Name, do.Namespace)
 			fields := []slack.AttachmentField{{Title: "user", Value: "<@" + userID + ">"}}
-			if job.Status.Succeeded >= 1 {
-				msg := slack.Attachment{Color: "#36a64f", Title: fmt.Sprintf("Succeed %s Job execution", job.Name), Fields: fields}
+			if err != nil {
+				msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed %s execution", do.Name), Fields: fields}
 				i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
 				return
 			}
-			if job.Status.Failed >= 1 {
-				msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed %s execution", job.Name), Fields: fields}
-				i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
-				return
-			}
-		})
+			msg := slack.Attachment{Color: "#36a64f", Title: fmt.Sprintf("Succeed %s Job execution", do.Name), Fields: fields}
+			i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
+		}()
 	}
 
 	blocks = i.plainBlocks(

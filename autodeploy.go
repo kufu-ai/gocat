@@ -66,7 +66,7 @@ func (a AutoDeploy) checkAndDeploy(dp DeployProject, phase DeployPhase) {
 		log.Print(err)
 		return
 	}
-	_, err = model.Deploy(dp, phase.Name, DeployOption{Branch: "master"})
+	_, err = model.Deploy(dp, phase.Name, DeployOption{Branch: "master", Wait: true})
 	if err != nil {
 		log.Print(err)
 		return
