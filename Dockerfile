@@ -1,6 +1,6 @@
 FROM golang:1.15.0-alpine AS build
 
-RUN apk add --update git libc-dev upx
+RUN apk add --update git libc-dev
 
 WORKDIR /src
 
