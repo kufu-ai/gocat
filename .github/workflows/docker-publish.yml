@@ -92,5 +92,4 @@ jobs:
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
 
-          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker buildx build . --file Dockerfile --tag $IMAGE_ID:$VERSION --platform $PLATFORMS --push
