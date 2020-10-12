@@ -69,14 +69,11 @@ jobs:
         with:
           version: latest
 
-      - name: Build image
-        run: docker buildx build . --file Dockerfile --tag $IMAGE_NAME --platform $PLATFORMS
-
-      - name: Log into GitHub Container Registry
+      - name: Log into DockerHub
       # TODO: Create a PAT with `read:packages` and `write:packages` scopes and save it as an Actions secret `CR_PAT`
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u $DOCKERHUB_USER --password-stdin
 
-      - name: Push image to GitHub Container Registry
+      - name: Build and Push image
         run: |
           IMAGE_ID=${{ github.repository_owner }}/$IMAGE_NAME
 
@@ -96,4 +93,4 @@ jobs:
           echo VERSION=$VERSION
 
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+          docker buildx build . --file Dockerfile --tag $IMAGE_ID:$VERSION --platform $PLATFORMS --push
