@@ -848,12 +848,14 @@ sigs.k8s.io/kustomize/api v0.6.0/go.mod h1:M7410E0ULUFQlxRskB//n5G0MPwGvs9HG6K8S
 sigs.k8s.io/kustomize/api v0.6.2 h1:qZzMiyllvwBv6KQ8V3VsF452INpDW4eWEHOfyeKvkHw=
 sigs.k8s.io/kustomize/api v0.6.2/go.mod h1:OL467fU5FuolXnIPUqhBLSXUUD00/IBjHs+dBdAS75E=
 sigs.k8s.io/kustomize/api v0.6.3/go.mod h1:mTwLqPB2uqh7LOcYoJKKHIfP5ioS6t3NfZ8lvia4NJY=
+sigs.k8s.io/kustomize/api v0.6.4/go.mod h1:BX11EGGdQTCYHLMaz7oT4TKdQ8owypNlYIrUj1i5HwA=
 sigs.k8s.io/kustomize/kyaml v0.1.11/go.mod h1:72/rLkSi+L/pHM1oCjwrf3ClU+tH5kZQvvdLSqIHwWU=
 sigs.k8s.io/kustomize/kyaml v0.3.4/go.mod h1:XJL84E6sOFeNrQ7CADiemc1B0EjIxHo3OhW4o1aJYNw=
 sigs.k8s.io/kustomize/kyaml v0.4.1/go.mod h1:XJL84E6sOFeNrQ7CADiemc1B0EjIxHo3OhW4o1aJYNw=
 sigs.k8s.io/kustomize/kyaml v0.7.1/go.mod h1:ne3F9JPhW2wrVaLslxBsEe6MQJQ9YK5rUutrdhBWXwI=
 sigs.k8s.io/kustomize/kyaml v0.8.1/go.mod h1:UTm64bSWVdBUA8EQoYCxVOaBQxUdIOr5LKWxA4GNbkw=
 sigs.k8s.io/kustomize/kyaml v0.9.1/go.mod h1:UTm64bSWVdBUA8EQoYCxVOaBQxUdIOr5LKWxA4GNbkw=
+sigs.k8s.io/kustomize/kyaml v0.9.3/go.mod h1:UTm64bSWVdBUA8EQoYCxVOaBQxUdIOr5LKWxA4GNbkw=
 sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e h1:4Z09Hglb792X0kfOBBJUPFEyvVfQWrYT/l8h5EKA6JQ=
 sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e/go.mod h1:wWxsB5ozmmv/SG7nM11ayaAW51xMvak/t1r0CSlcokI=
 sigs.k8s.io/structured-merge-diff/v3 v3.0.0-20200116222232-67a7b8c61874/go.mod h1:PlARxl6Hbt/+BC80dRLi1qAmnMqwqDg62YvvVkZjemw=
