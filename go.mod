@@ -9,12 +9,12 @@ require (
 	github.com/shurcooL/githubv4 v0.0.0-20191006152017-6d1ea27df521
 	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f // indirect
 	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
-	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/src-d/go-billy.v4 v4.3.2
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.19.4
-	k8s.io/apimachinery v0.19.4
+	k8s.io/apimachinery v0.20.0
 	k8s.io/client-go v0.19.4
 	sigs.k8s.io/kustomize/api v0.6.5
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
