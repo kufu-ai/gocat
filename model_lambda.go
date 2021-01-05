@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/service/lambda"
 )
@@ -22,11 +22,7 @@ func (self ModelLambdaDeployOutput) Status() DeployStatus {
 }
 
 func (self ModelLambdaDeployOutput) Message() string {
-	resByte, err := json.Marshal(self)
-	if err != nil {
-		return ""
-	}
-	return string(resByte)
+	return string(self.Payload)
 }
 
 func (self ModelLambda) Deploy(pj DeployProject, phase string, option DeployOption) (o DeployOutput, err error) {
@@ -52,5 +48,9 @@ func (self ModelLambda) Deploy(pj DeployProject, phase string, option DeployOpti
 	}
 
 	res, err := lambda.Invoke(pj.FuncName(), payload)
+	if res.FunctionError != nil {
+		return o, fmt.Errorf(string(res.Payload))
+	}
+
 	return ModelLambdaDeployOutput(*res), err
 }
