@@ -3,7 +3,7 @@ module github.com/zaiminc/gocat
 go 1.14
 
 require (
-	github.com/aws/aws-sdk-go v1.36.15
+	github.com/aws/aws-sdk-go v1.36.21
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
 	github.com/shurcooL/githubv4 v0.0.0-20191006152017-6d1ea27df521
