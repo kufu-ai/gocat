@@ -54,7 +54,7 @@ func (a AutoDeploy) checkAndDeploy(dp DeployProject, phase DeployPhase) {
 		log.Print(err)
 		return
 	}
-	tag, err := ecr.FindImageTagByRegexp(dp.ECRRepository(), dp.FilterRegexp(), dp.TargetRegexp(), ImageTagVars{Branch: "master"})
+	tag, err := ecr.FindImageTagByRegexp(dp.ECRRepository(), dp.FilterRegexp(), dp.TargetRegexp(), ImageTagVars{Branch: dp.DefaultBranch()})
 	if currentTag == tag || err != nil {
 		log.Printf("[INFO] Auto Deploy (%s:%s) is skipped", dp.ID, phase.Name)
 		return
@@ -66,7 +66,7 @@ func (a AutoDeploy) checkAndDeploy(dp DeployProject, phase DeployPhase) {
 		log.Print(err)
 		return
 	}
-	_, err = model.Deploy(dp, phase.Name, DeployOption{Branch: "master", Wait: true})
+	_, err = model.Deploy(dp, phase.Name, DeployOption{Branch: dp.DefaultBranch(), Wait: true})
 	if err != nil {
 		log.Print(err)
 		return

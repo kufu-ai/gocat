@@ -105,7 +105,7 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 
 		phase := s.toPhase(commands[2])
 		interactor := s.interactorFactory.Get(target, phase)
-		blocks, err := interactor.Request(target, phase, "master", ev.User, ev.Channel)
+		blocks, err := interactor.Request(target, phase, target.DefaultBranch(), ev.User, ev.Channel)
 		if err != nil {
 			log.Println("[ERROR] ", err)
 			s.client.PostMessage(ev.Channel, s.errorMessage(err.Error()))
