@@ -39,6 +39,7 @@ type DeployProject struct {
 	jenkinsJob       string
 	funcName         string // for Lambda
 	gitHubRepository string
+	defaultBranch    string
 	dockerRegistry   string
 	filterRegexp     string
 	targetRegexp     string
@@ -90,6 +91,13 @@ func (pj DeployProject) DockerRepository() string {
 	return pj.dockerRegistry
 }
 
+func (pj DeployProject) DefaultBranch() string {
+	if pj.defaultBranch == "" {
+		return "master"
+	}
+	return pj.defaultBranch
+}
+
 func (pj DeployProject) ECRRepository() string {
 	path := strings.Split(pj.dockerRegistry, "/")
 	if len(path) < 2 {
@@ -117,6 +125,7 @@ func (p *ProjectList) Reload() {
 		pj.jenkinsJob = cm.Data["JenkinsJob"]
 		pj.gitHubRepository = cm.Data["GitHubRepository"]
 		pj.dockerRegistry = cm.Data["DockerRegistry"]
+		pj.defaultBranch = cm.Data["DefaultBranch"]
 		pj.filterRegexp = cm.Data["FilterRegexp"]
 		pj.targetRegexp = cm.Data["TargetRegexp"]
 		pj.funcName = cm.Data["FuncName"]

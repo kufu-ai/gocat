@@ -21,7 +21,7 @@ func NewInteractorJenkins(i InteractorContext) (o InteractorJenkins) {
 
 func (i InteractorJenkins) Request(pj DeployProject, phase string, branch string, assigner string, channel string) ([]slack.Block, error) {
 	var txt *slack.TextBlockObject
-	if phase == "production" && branch != "master" {
+	if phase == "production" && branch != pj.DefaultBranch() {
 		txt = slack.NewTextBlockObject(
 			"mrkdwn",
 			fmt.Sprintf(
