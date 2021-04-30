@@ -3,7 +3,7 @@ module github.com/zaiminc/gocat
 go 1.14
 
 require (
-	github.com/aws/aws-sdk-go v1.38.29
+	github.com/aws/aws-sdk-go v1.38.30
 	github.com/docker/spdystream v0.0.0-20160310174837-449fdfce4d96 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
