@@ -17,6 +17,6 @@ require (
 	k8s.io/api v0.21.0
 	k8s.io/apimachinery v0.21.0
 	k8s.io/client-go v0.21.0
-	sigs.k8s.io/kustomize/api v0.8.8
+	sigs.k8s.io/kustomize/api v0.8.9
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
 )
