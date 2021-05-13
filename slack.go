@@ -175,10 +175,14 @@ func (s *SlackListener) SelectDeployTarget(phase string) slack.MsgOption {
 }
 
 func createDeployButtonSection(pj DeployProject, phaseName string) *slack.SectionBlock {
+	action := "branchlist"
+	if !pj.DisableBranchDeploy {
+		action = "request"
+	}
 	phase := pj.FindPhase(phaseName)
 	txt := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*%s* (%s)", pj.ID, pj.GitHubRepository()), false, false)
 	btnTxt := slack.NewTextBlockObject("plain_text", "Deploy", false, false)
-	btn := slack.NewButtonBlockElement("", fmt.Sprintf("deploy_%s_branchlist|%s_%s", phase.Kind, pj.ID, phase.Name), btnTxt)
+	btn := slack.NewButtonBlockElement("", fmt.Sprintf("deploy_%s_%s|%s_%s", phase.Kind, action, pj.ID, phase.Name), btnTxt)
 	section := slack.NewSectionBlock(txt, nil, slack.NewAccessory(btn))
 	return section
 }
