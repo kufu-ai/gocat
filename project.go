@@ -34,18 +34,19 @@ type DeployPhase struct {
 }
 
 type DeployProject struct {
-	ID               string
-	Kind             string
-	jenkinsJob       string
-	funcName         string // for Lambda
-	gitHubRepository string
-	defaultBranch    string
-	dockerRegistry   string
-	filterRegexp     string
-	targetRegexp     string
-	steps            []string
-	Alias            string
-	Phases           []DeployPhase
+	ID                  string
+	Kind                string
+	jenkinsJob          string
+	funcName            string // for Lambda
+	gitHubRepository    string
+	defaultBranch       string
+	dockerRegistry      string
+	filterRegexp        string
+	targetRegexp        string
+	DisableBranchDeploy bool
+	steps               []string
+	Alias               string
+	Phases              []DeployPhase
 }
 
 func (p DeployProject) FindPhase(name string) DeployPhase {
@@ -130,6 +131,7 @@ func (p *ProjectList) Reload() {
 		pj.targetRegexp = cm.Data["TargetRegexp"]
 		pj.funcName = cm.Data["FuncName"]
 		pj.Alias = cm.Data["Alias"]
+		pj.DisableBranchDeploy = cm.Data["DisableBranchDeploy"] == "true"
 		yaml.Unmarshal([]byte(cm.Data["Steps"]), &pj.steps)
 		yaml.Unmarshal([]byte(cm.Data["Phases"]), &pj.Phases)
 		for i, phase := range pj.Phases {

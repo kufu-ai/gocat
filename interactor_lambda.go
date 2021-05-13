@@ -48,7 +48,11 @@ func (self InteractorLambda) approve(target string, phase string, branch string,
 		}
 
 		msg := slack.Attachment{Color: "#36a64f", Title: fmt.Sprintf("Succeed to deploy %s %s", pj.ID, phase)}
-		msg.Fields = []slack.AttachmentField{{Title: "user", Value: "<@" + userID + ">"}}
+		msg.Fields = []slack.AttachmentField{
+			{Title: "user", Value: "<@" + userID + ">"},
+			{Title: "phase", Value: phase},
+			{Title: "branch", Value: branch},
+		}
 		if res.Message() != "" {
 			msg.Fields = append(msg.Fields, slack.AttachmentField{Title: "response", Value: res.Message()})
 		}

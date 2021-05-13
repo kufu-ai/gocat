@@ -101,6 +101,14 @@ func (h interactionHandler) Deploy(w http.ResponseWriter, interactionRequest sla
 	var blocks []slack.Block
 	var err error
 	switch {
+	case strings.Contains(params[0], "request"):
+		p := strings.Split(params[1], "_")
+		if len(p) != 2 {
+			err = fmt.Errorf("Invalid Arguments")
+			break
+		}
+		pj := h.projectList.Find(p[0])
+		blocks, err = interactor.Request(pj, p[1], pj.DefaultBranch(), userID, interactionRequest.Channel.ID)
 	case strings.Contains(params[0], "approve"):
 		blocks, err = interactor.Approve(params[1], userID, interactionRequest.Channel.ID)
 	case strings.Contains(params[0], "reject"):
