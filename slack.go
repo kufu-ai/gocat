@@ -176,7 +176,7 @@ func (s *SlackListener) SelectDeployTarget(phase string) slack.MsgOption {
 
 func createDeployButtonSection(pj DeployProject, phaseName string) *slack.SectionBlock {
 	action := "branchlist"
-	if !pj.DisableBranchDeploy {
+	if pj.DisableBranchDeploy {
 		action = "request"
 	}
 	phase := pj.FindPhase(phaseName)
