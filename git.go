@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+	"time"
+
 	"golang.org/x/xerrors"
 	"gopkg.in/src-d/go-billy.v4/memfs"
 	git "gopkg.in/src-d/go-git.v4"
@@ -12,11 +17,7 @@ import (
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	"gopkg.in/src-d/go-git.v4/storage/memory"
 	yaml "gopkg.in/yaml.v2"
-	"io/ioutil"
-	"os"
 	"sigs.k8s.io/kustomize/api/types"
-	"strings"
-	"time"
 )
 
 type GitOperator struct {
@@ -111,6 +112,11 @@ func (g GitOperator) PushDockerImageTag(id string, phase DeployPhase, tag string
 		return
 	}
 
+	err = g.verify(w)
+	if err != nil {
+		return
+	}
+
 	hash, _ := w.Commit(
 		fmt.Sprintf("Change docker image tag. target: %s, phase: %s, tag: %s.", phase.Path, phase.Name, tag),
 		&git.CommitOptions{
@@ -150,6 +156,22 @@ type ConfigMap struct {
 
 type OverWrite interface {
 	Update([]byte) (interface{}, error)
+}
+
+func (g GitOperator) verify(w *git.Worktree) (err error) {
+	status, err := w.Status()
+	if err != nil {
+		fmt.Println("[ERROR] Failed to get status: ", xerrors.New(err.Error()))
+		return
+	}
+
+	for path, status := range status {
+		if status.Staging != git.Modified {
+			fmt.Printf("[ERROR] There are some extra file updates. File: %c %s", status, path)
+			return xerrors.New("There are some extra file updates")
+		}
+	}
+	return nil
 }
 
 func (g GitOperator) commit(w *git.Worktree, targetFilePath string, o OverWrite) (err error) {
