@@ -15,5 +15,5 @@ require (
 	k8s.io/api v0.22.1
 	k8s.io/apimachinery v0.22.1
 	k8s.io/client-go v0.22.1
-	sigs.k8s.io/kustomize/api v0.8.11
+	sigs.k8s.io/kustomize/api v0.9.0
 )

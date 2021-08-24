@@ -594,10 +594,10 @@ k8s.io/utils v0.0.0-20210707171843-4b05e18ac7d9/go.mod h1:jPW/WVKK9YHAvNhRxK0md/
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
-sigs.k8s.io/kustomize/api v0.8.11 h1:LzQzlq6Z023b+mBtc6v72N2mSHYmN8x7ssgbf/hv0H8=
-sigs.k8s.io/kustomize/api v0.8.11/go.mod h1:a77Ls36JdfCWojpUqR6m60pdGY1AYFix4AH83nJtY1g=
-sigs.k8s.io/kustomize/kyaml v0.11.0 h1:9KhiCPKaVyuPcgOLJXkvytOvjMJLoxpjodiycb4gHsA=
-sigs.k8s.io/kustomize/kyaml v0.11.0/go.mod h1:GNMwjim4Ypgp/MueD3zXHLRJEjz7RvtPae0AwlvEMFM=
+sigs.k8s.io/kustomize/api v0.9.0 h1:yGQnm/2GBbHBLSVbM0CsqgPmqK/NSDbhSGbXuhuVN7s=
+sigs.k8s.io/kustomize/api v0.9.0/go.mod h1:bOF7z4DcRIXcOCeSbVq5o9JhMRnNzWqrRSSBFtz05A4=
+sigs.k8s.io/kustomize/kyaml v0.11.1 h1:MWihd9syKG7VQnAzr/OpKb94FvH+cw96nEV1u3it7pI=
+sigs.k8s.io/kustomize/kyaml v0.11.1/go.mod h1:FTJxEZ86ScK184NpGSAQcfEqee0nul8oLCK30D47m4E=
 sigs.k8s.io/structured-merge-diff/v4 v4.0.2/go.mod h1:bJZC9H9iH24zzfZ/41RGcq60oK1F7G282QMXDPYydCw=
 sigs.k8s.io/structured-merge-diff/v4 v4.1.2 h1:Hr/htKFmJEbtMgS/UD0N+gtgctAqz81t3nu+sPzynno=
 sigs.k8s.io/structured-merge-diff/v4 v4.1.2/go.mod h1:j/nl6xW8vLS49O8YvXW1ocPhZawJtm+Yrr7PPRQ0Vg4=
