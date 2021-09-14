@@ -67,12 +67,19 @@ func (i InteractorKustomize) SelectBranch(params string, branch string, userID s
 }
 
 func (i InteractorKustomize) Approve(params string, userID string, channel string) (blocks []slack.Block, err error) {
+	prID := ""
 	p := strings.Split(params, "_")
-	if len(p) != 2 {
+	if len(p) == 2 {
+		prID = p[0]
+	} else if (strings.HasPrefix(params, "PR")) {
+		// The format of IDs for GitHub PullReques has changed
+		// e.g. PR_hogehoge_fugafuga
+		prID = strings.Join(p[:len(p)-1], "_")
+	} else {
 		err = fmt.Errorf("Invalid Arguments")
 		return
 	}
-	if err = i.github.MergePullRequest(p[0]); err != nil {
+	if err = i.github.MergePullRequest(prID); err != nil {
 		return
 	}
 
