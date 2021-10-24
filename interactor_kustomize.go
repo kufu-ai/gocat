@@ -86,10 +86,10 @@ func (i InteractorKustomize) Approve(params string, userID string, channel strin
 	blockObject := slack.NewTextBlockObject("mrkdwn", i.config.ArgoCDHost+"/applications", false, false)
 	blocks = append(blocks, slack.NewSectionBlock(blockObject, nil, nil))
 
-	prMsg := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("merged https://github.com/%s/%s/pull/%s\nby <@%s>", i.github.org, i.github.repo, p[1], userID), false, false)
+	prMsg := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("merged https://github.com/%s/%s/pull/%s\nby <@%s>", i.github.org, i.github.repo, prID, userID), false, false)
 	blocks = append(blocks, slack.NewSectionBlock(prMsg, nil, nil))
 
-	num, err := strconv.Atoi(p[1])
+	num, err := strconv.Atoi(prID)
 	if err != nil {
 		return blocks, nil
 	}
