@@ -68,13 +68,16 @@ func (i InteractorKustomize) SelectBranch(params string, branch string, userID s
 
 func (i InteractorKustomize) Approve(params string, userID string, channel string) (blocks []slack.Block, err error) {
 	prID := ""
+	prNumber := ""
 	p := strings.Split(params, "_")
 	if len(p) == 2 {
 		prID = p[0]
-	} else if (strings.HasPrefix(params, "PR")) {
+		prNumber = p[1]
+	} else if strings.HasPrefix(params, "PR") {
 		// The format of IDs for GitHub PullReques has changed
 		// e.g. PR_hogehoge_fugafuga
 		prID = strings.Join(p[:len(p)-1], "_")
+		prNumber = p[len(p)-1]
 	} else {
 		err = fmt.Errorf("Invalid Arguments")
 		return
@@ -86,10 +89,10 @@ func (i InteractorKustomize) Approve(params string, userID string, channel strin
 	blockObject := slack.NewTextBlockObject("mrkdwn", i.config.ArgoCDHost+"/applications", false, false)
 	blocks = append(blocks, slack.NewSectionBlock(blockObject, nil, nil))
 
-	prMsg := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("merged https://github.com/%s/%s/pull/%s\nby <@%s>", i.github.org, i.github.repo, p[1], userID), false, false)
+	prMsg := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("merged https://github.com/%s/%s/pull/%s\nby <@%s>", i.github.org, i.github.repo, prNumber, userID), false, false)
 	blocks = append(blocks, slack.NewSectionBlock(prMsg, nil, nil))
 
-	num, err := strconv.Atoi(p[1])
+	num, err := strconv.Atoi(prNumber)
 	if err != nil {
 		return blocks, nil
 	}
