@@ -70,8 +70,9 @@ func (e ECRClient) FindImageTagByRegexp(repo string, rawFilterRegexp string, raw
 	return "", fmt.Errorf("[ERROR] NotFound specified image tag")
 }
 
-func (e ECRClient) describeImages(repo *string, nextToken *string) []*ecr.ImageDetail {
+func (e ECRClient) describeImages(registryId *string, repo *string, nextToken *string) []*ecr.ImageDetail {
 	input := &ecr.DescribeImagesInput{
+		RegistryId: registryId,
 		RepositoryName: repo,
 		NextToken:      nextToken,
 	}
