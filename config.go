@@ -80,7 +80,7 @@ func InitConfig() (err error) {
 		envs := []string{"CONFIG_GITHUB_ACCESS_TOKEN", "CONFIG_SLACK_OAUTH_TOKEN", "CONFIG_SLACK_VERIFICATION_TOKEN", "CONFIG_JENKINS_BOT_TOKEN", "CONFIG_JENKINS_JOB_TOKEN"}
 		for _, env := range envs {
 			if os.Getenv(env) == "" {
-				log.Printf("[WORNING] %s environment variable is Empty", env)
+				log.Printf("[WARNING] %s environment variable is Empty", env)
 			}
 		}
 		Config.GitHubAccessToken = os.Getenv("CONFIG_GITHUB_ACCESS_TOKEN")
