@@ -54,7 +54,7 @@ func (e ECRClient) FindImageTagByRegexp(repo string, rawFilterRegexp string, raw
 	if err != nil {
 		return "", fmt.Errorf("[ERROR] targetRegexp cannot be parsed: %s", rawTargetRegexp)
 	}
-	arr := e.describeImages(&repo, nil)
+	arr := e.describeImages(&registryId, &repo, nil)
 	for _, v := range arr {
 		for _, vv1 := range v.ImageTags {
 			if regexp.MustCompile(filterRegexp).FindStringSubmatch(*vv1) == nil {
@@ -82,7 +82,7 @@ func (e ECRClient) describeImages(registryId *string, repo *string, nextToken *s
 		return []*ecr.ImageDetail{}
 	}
 	if outputs.NextToken != nil {
-		return append(outputs.ImageDetails, e.describeImages(repo, outputs.NextToken)...)
+		return append(outputs.ImageDetails, e.describeImages(registryId, repo, outputs.NextToken)...)
 	}
 	return outputs.ImageDetails
 }
