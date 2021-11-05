@@ -45,7 +45,7 @@ func (self ModelCombine) Deploy(pj DeployProject, phase string, option DeployOpt
 	if err != nil {
 		return o, err
 	}
-	option.Tag, err = ecr.FindImageTagByRegexp(pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch, Phase: phase})
+	option.Tag, err = ecr.FindImageTagByRegexp(pj.ECRRegistryId(), pj.ECRRepository(), pj.FilterRegexp(), pj.TargetRegexp(), ImageTagVars{Branch: option.Branch, Phase: phase})
 	if err != nil {
 		return o, err
 	}

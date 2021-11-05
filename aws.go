@@ -44,7 +44,7 @@ func CreateECRInstance() (ECRClient, error) {
 	return ECRClient{client: ecr.New(sess, aws.NewConfig().WithRegion("ap-northeast-1"))}, nil
 }
 
-func (e ECRClient) FindImageTagByRegexp(repo string, rawFilterRegexp string, rawTargetRegexp string, vars ImageTagVars) (string, error) {
+func (e ECRClient) FindImageTagByRegexp(registryId string, repo string, rawFilterRegexp string, rawTargetRegexp string, vars ImageTagVars) (string, error) {
 	vars.Branch = strings.Replace(vars.Branch, "/", "_", -1)
 	filterRegexp, err := vars.Parse(rawFilterRegexp)
 	if err != nil {
