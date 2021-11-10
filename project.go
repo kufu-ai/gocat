@@ -112,7 +112,7 @@ func (pj DeployProject) ECRRegistryId() string {
 	if len(path) < 2 {
 		return ""
 	}
-	return path[0:]
+	return path[0]
 }
 
 type ProjectList struct {
