@@ -198,9 +198,13 @@ func (g GitHub) CreatePullRequest(branch string, title string, description strin
 	}
 	body := githubv4.String(fmt.Sprintf("from bot\n\n%s", description))
 	modify := githubv4.Boolean(true)
+	refName := "refs/heads/master"
+	if Config.GitHubDefaultBranch != "" {
+		refName = Config.GitHubDefaultBranch
+	}
 	input := githubv4.CreatePullRequestInput{
 		RepositoryID:        repoID,
-		BaseRefName:         "refs/heads/master",
+		BaseRefName:         githubv4.String(refName),
 		HeadRefName:         githubv4.String(branch), //"refs/heads/bot/test-update"
 		Title:               githubv4.String(title),  //"Deploy super staging",
 		Body:                &body,

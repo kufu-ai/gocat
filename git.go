@@ -74,10 +74,14 @@ func (g GitOperator) PushDockerImageTag(id string, phase DeployPhase, tag string
 	if err != nil {
 		return
 	}
+	refName := plumbing.Master
+	if Config.GitHubDefaultBranch != "" {
+		refName = plumbing.ReferenceName(Config.GitHubDefaultBranch)
+	}
 
 	err = w.Checkout(&git.CheckoutOptions{
 		Create: false,
-		Branch: plumbing.Master,
+		Branch: refName,
 	})
 	if err != nil {
 		fmt.Println("[ERROR] Failed to Checkout master: ", xerrors.New(err.Error()))
