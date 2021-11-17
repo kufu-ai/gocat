@@ -107,6 +107,14 @@ func (pj DeployProject) ECRRepository() string {
 	return strings.Join(path[1:], "/")
 }
 
+func (pj DeployProject) ECRRegistryId() string {
+	path := strings.Split(pj.dockerRegistry, ".")
+	if len(path) < 2 {
+		return ""
+	}
+	return path[0]
+}
+
 type ProjectList struct {
 	Items []DeployProject
 }
