@@ -13,7 +13,7 @@ require (
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.23.0
-	k8s.io/apimachinery v0.23.0
+	k8s.io/apimachinery v0.23.1
 	k8s.io/client-go v0.23.0
 	sigs.k8s.io/json v0.0.0-20211122195132-35920ff0ca7e // indirect
 	sigs.k8s.io/kustomize/api v0.10.1
