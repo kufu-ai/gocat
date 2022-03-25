@@ -16,5 +16,5 @@ require (
 	k8s.io/apimachinery v0.23.5
 	k8s.io/client-go v0.23.5
 	sigs.k8s.io/json v0.0.0-20211122195132-35920ff0ca7e // indirect
-	sigs.k8s.io/kustomize/api v0.11.2
+	sigs.k8s.io/kustomize/api v0.11.3
 )
