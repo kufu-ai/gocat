@@ -1,4 +1,4 @@
-FROM golang:1.17.4-stretch
+FROM golang:1.19.0-stretch
 
 RUN apt-get update && apt-get install -y unzip && \
   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
