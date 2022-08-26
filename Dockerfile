@@ -1,4 +1,4 @@
-FROM golang:1.17.4-alpine3.15 AS build
+FROM golang:1.19.0-alpine3.16 AS build
 
 RUN apk add --update git libc-dev
 
