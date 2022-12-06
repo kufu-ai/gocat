@@ -3,7 +3,7 @@ module github.com/zaiminc/gocat
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.153
+	github.com/aws/aws-sdk-go v1.44.154
 	github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
 	github.com/shurcooL/githubv4 v0.0.0-20191006152017-6d1ea27df521
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
