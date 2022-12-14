@@ -1,6 +1,6 @@
-FROM golang:1.19.0-alpine3.16 AS build
+FROM golang:1.19.4-bullseye AS build
 
-RUN apk add --update git libc-dev
+RUN apt update && apt install git libc-dev
 
 WORKDIR /src
 

@@ -1,4 +1,4 @@
-FROM golang:1.19.0-stretch
+FROM golang:1.19.4-bullseye
 
 RUN apt-get update && apt-get install -y unzip && \
   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y unzip && \
 RUN mkdir /bot
 WORKDIR /bot
 
-RUN go get github.com/pilu/fresh
+RUN go install github.com/pilu/fresh@latest
 
 COPY . .
 
