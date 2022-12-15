@@ -11,7 +11,7 @@ COPY . .
 
 RUN go build -o ./gocat
 
-FROM alpine
+FROM debian:bullseye
 
 WORKDIR /src
 COPY --from=build /src/gocat /src/gocat
