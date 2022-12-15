@@ -3,4 +3,4 @@ resources:
 images:
 - name: zaiminc/gocat
   newName: zaiminc/gocat
-  newTag: latest
+  newTag: 0.1.5
