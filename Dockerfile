@@ -15,6 +15,7 @@ FROM debian:bullseye
 
 WORKDIR /src
 COPY --from=build /src/gocat /src/gocat
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 CMD /src/gocat
 
