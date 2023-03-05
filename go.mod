@@ -3,7 +3,7 @@ module github.com/zaiminc/gocat
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.210
+	github.com/aws/aws-sdk-go v1.44.214
 	github.com/go-git/go-billy/v5 v5.4.1
 	github.com/go-git/go-git/v5 v5.6.0
 	github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
