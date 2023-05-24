@@ -71,7 +71,7 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 
 	s.projectList.Reload()
 	s.userList.Reload()
-	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|stg|pro|prd) branch`).FindAllStringSubmatch(ev.Text, -1); match != nil {
+	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|sandbox|stg|pro|prd) branch`).FindAllStringSubmatch(ev.Text, -1); match != nil {
 		log.Println("[INFO] Deploy command is Called")
 		commands := strings.Split(match[0][0], " ")
 		target, err := s.projectList.FindByAlias(commands[1])
@@ -93,7 +93,7 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 		s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(blocks...))
 		return nil
 	}
-	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|stg|pro|prd)`).FindAllStringSubmatch(ev.Text, -1); match != nil {
+	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|sandbox|stg|pro|prd)`).FindAllStringSubmatch(ev.Text, -1); match != nil {
 		log.Println("[INFO] Deploy command is Called")
 		commands := strings.Split(match[0][0], " ")
 		target, err := s.projectList.FindByAlias(commands[1])
@@ -125,17 +125,22 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 		s.client.PostMessage(ev.Channel, msgOpt)
 		return nil
 	}
+	if regexp.MustCompile(`deploy sandbox`).MatchString(ev.Text) {
+		msgOpt := s.SelectDeployTarget("sandbox")
+		s.client.PostMessage(ev.Channel, msgOpt)
+		return nil
+	}
 	return nil
 }
 
 func (s *SlackListener) helpMessage() slack.MsgOption {
-	deployMasterText := slack.NewTextBlockObject("mrkdwn", "*masterのデプロイ*\n`@bot-name deploy api staging`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionに置換可能です。\nコマンド入力後にデプロイするかの確認ボタンが出てきます。", false, false)
+	deployMasterText := slack.NewTextBlockObject("mrkdwn", "*masterのデプロイ*\n`@bot-name deploy api staging`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。\nコマンド入力後にデプロイするかの確認ボタンが出てきます。", false, false)
 	deployMasterSection := slack.NewSectionBlock(deployMasterText, nil, nil)
 
-	deployBranchText := slack.NewTextBlockObject("mrkdwn", "*ブランチのデプロイ*\n`@bot-name deploy api staging branch`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionに置換可能です。\nブランチを選択するドロップダウンが出てきます。\nブランチ選択後にデプロイするかの確認ボタンが出てきます。", false, false)
+	deployBranchText := slack.NewTextBlockObject("mrkdwn", "*ブランチのデプロイ*\n`@bot-name deploy api staging branch`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。\nブランチを選択するドロップダウンが出てきます。\nブランチ選択後にデプロイするかの確認ボタンが出てきます。", false, false)
 	deployBranchSection := slack.NewSectionBlock(deployBranchText, nil, nil)
 
-	deployText := slack.NewTextBlockObject("mrkdwn", "*デプロイ対象の選択をSlackのUIから選択するデプロイ手法*\n`@bot-name deploy staging`\nstagingの部分はproductionに置換可能です。\nデプロイ対象の選択後にデプロイするブランチの選択肢が出てきます。", false, false)
+	deployText := slack.NewTextBlockObject("mrkdwn", "*デプロイ対象の選択をSlackのUIから選択するデプロイ手法*\n`@bot-name deploy staging`\nstagingの部分はproductionやsandboxに置換可能です。\nデプロイ対象の選択後にデプロイするブランチの選択肢が出てきます。", false, false)
 	deploySection := slack.NewSectionBlock(deployText, nil, nil)
 
 	return slack.MsgOptionBlocks(
@@ -199,6 +204,8 @@ func (s *SlackListener) toPhase(str string) string {
 		return "production"
 	case "stg", "staging":
 		return "staging"
+	case "sandbox":
+		return "sandbox"
 	default:
 		return "staging"
 	}
