@@ -19,6 +19,9 @@ type slackConfig struct {
 	ArgoCDHost          string `json:"ARGOCD_HOST"`
 }
 
+// getSecret fetches slackConfig from AWS Secrets Manager secret
+// denoted by secretName.
+// The secret must be a JSON object with the keys defined in slackConfig.
 func getSecret(secretName string) slackConfig {
 	//Create a Secrets Manager client
 	sess, err := session.NewSession(&aws.Config{

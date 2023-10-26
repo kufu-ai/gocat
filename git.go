@@ -20,6 +20,8 @@ import (
 	"sigs.k8s.io/kustomize/api/types"
 )
 
+// GitOperator is our wrapper aroud go-git to do GitOps, and
+// tagging commits to correlate them with the container image tags.
 type GitOperator struct {
 	auth       transport.AuthMethod
 	repo       string
