@@ -13,6 +13,8 @@ import (
 	"github.com/nlopes/slack/slackevents"
 )
 
+// SlackListener is a http.Handler that can handle slack events.
+// See https://api.slack.com/apis/connections/events-api for more details about events.
 type SlackListener struct {
 	client            *slack.Client
 	verificationToken string

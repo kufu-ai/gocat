@@ -11,6 +11,8 @@ import (
 	"github.com/nlopes/slack"
 )
 
+// interactionHandler is a http.Handler that can handle slack interaction callbacks.
+// See https://api.slack.com/interactivity/handling for more details about interactions.
 type interactionHandler struct {
 	verificationToken string
 	client            *slack.Client

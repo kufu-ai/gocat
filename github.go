@@ -3,16 +3,26 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 	yaml "gopkg.in/yaml.v2"
-	"io/ioutil"
-	"net/http"
 	"sigs.k8s.io/kustomize/api/types"
-	"strings"
-	"time"
 )
 
+// GitHub, or more typically GitHub Instance as we call in our codebase,
+// is a GitHub + GitOps client that can be used to interact with GitHub
+// to do GitOps.
+//
+// It has methods to get files, create pull requests, request reviews,
+// get kustomization, and so on.
+//
+// This is used by deploy models so that each deploy model
+// does not need to implement the same logic to interact with GitHub.
 type GitHub struct {
 	client     githubv4.Client
 	httpClient *http.Client
