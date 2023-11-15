@@ -68,6 +68,9 @@ func (i InteractorJenkins) approve(target string, phase string, branch string, u
 	jobName := pj.JenkinsJob()
 	url := fmt.Sprintf("https://bot:%s@%s/job/%s/buildWithParameters?token=%s&cause=slack-bot&ENV=%s&BRANCH=%s", i.config.JenkinsBotToken, i.config.JenkinsHost, jobName, i.config.JenkinsJobToken, phase, branch)
 	resp, err := http.Get(url)
+	if err != nil {
+		return
+	}
 	defer resp.Body.Close()
 	res := fmt.Sprintf("Execute https://%s/job/%s/ \n selected branch: %s", i.config.JenkinsHost, jobName, branch)
 	if err != nil {

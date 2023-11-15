@@ -78,7 +78,7 @@ func (e ECRClient) describeImages(registryId *string, repo *string, nextToken *s
 	}
 	outputs, err := e.client.DescribeImages(input)
 	if err != nil {
-		log.Print("Failed describe images, %v", err)
+		log.Printf("Failed to describe images: %v", err)
 		return []*ecr.ImageDetail{}
 	}
 	if outputs.NextToken != nil {

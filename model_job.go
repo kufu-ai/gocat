@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"encoding/json"
+
 	batchv1 "k8s.io/api/batch/v1"
 	yaml "k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -92,6 +93,8 @@ func (self ModelJob) Deploy(pj DeployProject, phase string, option DeployOption)
 }
 
 func (self ModelJob) Watch(name, namespace string) error {
+	// We don't stop the ticker as this is a long-running process
+	// with no way to cancel it.
 	t := time.NewTicker(time.Duration(20) * time.Second)
 	log.Println("[INFO] Watch job", name)
 	for {
@@ -113,8 +116,6 @@ func (self ModelJob) Watch(name, namespace string) error {
 			}
 		}
 	}
-	t.Stop()
-	return nil
 }
 
 func init() {
