@@ -8,6 +8,7 @@ require (
 	github.com/go-git/go-git/v5 v5.10.0
 	github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
 	github.com/shurcooL/githubv4 v0.0.0-20191006152017-6d1ea27df521
+	github.com/stretchr/testify v1.8.1
 	golang.org/x/oauth2 v0.14.0
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2
 	gopkg.in/yaml.v2 v2.4.0
@@ -53,6 +54,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shurcooL/graphql v0.0.0-20181231061246-d48a9a75455f // indirect
 	github.com/skeema/knownhosts v1.2.0 // indirect
