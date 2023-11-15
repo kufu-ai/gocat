@@ -74,7 +74,15 @@ func (pj DeployProject) Steps() []string {
 	return pj.steps
 }
 
-func (pj DeployProject) FilterRegexp() string {
+// ImageTagRegexp returns the regexp to filter image tags.
+// This regexp is used to find the image tag from ECR.
+// The regexp is parsed as a template, and the following variables are available:
+//
+//	{{.Branch}}: The branch name of the target commit.
+//	{{.Phase}}: The phase name.
+//
+// See ECRClient.FindImageTagByRegexp for more details on how the regexp is used.
+func (pj DeployProject) ImageTagRegexp() string {
 	if pj.filterRegexp == "" {
 		return "^{{.Branch}}$"
 	}
