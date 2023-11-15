@@ -173,7 +173,7 @@ func (g GitOperator) verify(w *git.Worktree) (err error) {
 
 	for path, status := range status {
 		if status.Staging != git.Modified {
-			fmt.Printf("[ERROR] There are some extra file updates. File: %c %s", status, path)
+			fmt.Printf("[ERROR] There are some extra file updates. File: %v %s", status, path)
 			return xerrors.New("There are some extra file updates")
 		}
 	}

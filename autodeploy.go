@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/nlopes/slack"
 	"log"
 	"time"
+
+	"github.com/nlopes/slack"
 )
 
 type AutoDeploy struct {
@@ -32,6 +33,8 @@ func (a AutoDeploy) Watch(sec int64) {
 }
 
 func (a AutoDeploy) CheckAndDeploy(sec int64, dp DeployProject, phase DeployPhase) {
+	// We don't stop the ticker as this is a long-running process
+	// with no way to cancel it.
 	t := time.NewTicker(time.Duration(sec) * time.Second)
 	for {
 		select {
@@ -39,7 +42,6 @@ func (a AutoDeploy) CheckAndDeploy(sec int64, dp DeployProject, phase DeployPhas
 			a.checkAndDeploy(dp, phase)
 		}
 	}
-	t.Stop()
 }
 
 func (a AutoDeploy) checkAndDeploy(dp DeployProject, phase DeployPhase) {
