@@ -8,18 +8,21 @@ import (
 	"github.com/nlopes/slack"
 )
 
-type InteractorKustomize struct {
+type InteractorGitOps struct {
 	InteractorContext
-	model ModelKustomize
+	model GitOpsPlugin
 }
 
-func NewInteractorKustomize(i InteractorContext) (o InteractorKustomize) {
-	o = InteractorKustomize{InteractorContext: i, model: NewModelKustomize(&o.github, &o.git)}
+func NewInteractorKustomize(i InteractorContext) (o InteractorGitOps) {
+	o = InteractorGitOps{
+		InteractorContext: i,
+		model:             NewGitOpsPluginKustomize(&o.github, &o.git),
+	}
 	o.kind = "kustomize"
 	return
 }
 
-func (i InteractorKustomize) Request(pj DeployProject, phase string, branch string, assigner string, channel string) (blocks []slack.Block, err error) {
+func (i InteractorGitOps) Request(pj DeployProject, phase string, branch string, assigner string, channel string) (blocks []slack.Block, err error) {
 	user := i.userList.FindBySlackUserID(assigner)
 
 	go func() {
@@ -50,23 +53,23 @@ func (i InteractorKustomize) Request(pj DeployProject, phase string, branch stri
 	return i.plainBlocks("Now creating pull request..."), nil
 }
 
-func (i InteractorKustomize) BranchList(pj DeployProject, phase string) ([]slack.Block, error) {
+func (i InteractorGitOps) BranchList(pj DeployProject, phase string) ([]slack.Block, error) {
 	return i.branchList(pj, phase)
 }
 
-func (i InteractorKustomize) BranchListFromRaw(params string) ([]slack.Block, error) {
+func (i InteractorGitOps) BranchListFromRaw(params string) ([]slack.Block, error) {
 	p := strings.Split(params, "_")
 	pj := i.projectList.Find(p[0])
 	return i.branchList(pj, p[1])
 }
 
-func (i InteractorKustomize) SelectBranch(params string, branch string, userID string, channel string) ([]slack.Block, error) {
+func (i InteractorGitOps) SelectBranch(params string, branch string, userID string, channel string) ([]slack.Block, error) {
 	p := strings.Split(params, "_")
 	pj := i.projectList.Find(p[0])
 	return i.Request(pj, p[1], branch, userID, channel)
 }
 
-func (i InteractorKustomize) Approve(params string, userID string, channel string) (blocks []slack.Block, err error) {
+func (i InteractorGitOps) Approve(params string, userID string, channel string) (blocks []slack.Block, err error) {
 	prID := ""
 	prNumber := ""
 	p := strings.Split(params, "_")
@@ -113,12 +116,12 @@ func (i InteractorKustomize) Approve(params string, userID string, channel strin
 	return
 }
 
-func (i InteractorKustomize) Reject(params string, userID string) ([]slack.Block, error) {
+func (i InteractorGitOps) Reject(params string, userID string) ([]slack.Block, error) {
 	p := strings.Split(params, "_")
 	return i.reject(p[0], p[1], p[2], userID)
 }
 
-func (i InteractorKustomize) reject(prID string, prNum string, branch string, userID string) (blocks []slack.Block, err error) {
+func (i InteractorGitOps) reject(prID string, prNum string, branch string, userID string) (blocks []slack.Block, err error) {
 	if err = i.github.ClosePullRequest(prID); err != nil {
 		return
 	}

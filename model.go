@@ -52,6 +52,7 @@ func NewDeployModelList(github *GitHub, git *GitOperator, projectList *ProjectLi
 	return &DeployModelList{
 		"lambda":    NewModelLambda(),
 		"kustomize": NewModelKustomize(github, git),
+		"kanvas":    NewModelKanvas(github, git),
 		"combine":   NewModelCombine(github, git, projectList),
 		"job":       NewModelJob(github),
 	}
@@ -61,6 +62,7 @@ func NewDeployModelListWithoutCombine(github *GitHub, git *GitOperator) *DeployM
 	return &DeployModelList{
 		"lambda":    NewModelLambda(),
 		"kustomize": NewModelKustomize(github, git),
+		"kanvas":    NewModelKanvas(github, git),
 		"job":       NewModelJob(github),
 	}
 }

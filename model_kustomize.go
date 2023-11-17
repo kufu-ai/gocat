@@ -5,31 +5,36 @@ import (
 	"strings"
 )
 
-type ModelKustomize struct {
+type ModelGitOps struct {
 	github *GitHub
 	git    *GitOperator
+	plugin GitOpsPlugin
 }
 
-func NewModelKustomize(github *GitHub, git *GitOperator) ModelKustomize {
-	return ModelKustomize{github: github, git: git}
+func NewModelKustomize(github *GitHub, git *GitOperator) ModelGitOps {
+	return ModelGitOps{
+		github: github,
+		git:    git,
+		plugin: NewGitOpsPluginKustomize(github, git),
+	}
 }
 
-type ModelKustomizePrepareOutput struct {
+type GitOpsPrepareOutput struct {
 	PullRequestID     string
 	PullRequestNumber int
 	Branch            string
 	status            DeployStatus
 }
 
-func (self ModelKustomizePrepareOutput) Status() DeployStatus {
+func (self GitOpsPrepareOutput) Status() DeployStatus {
 	return self.status
 }
 
-func (self ModelKustomizePrepareOutput) Message() string {
+func (self GitOpsPrepareOutput) Message() string {
 	return "Success to deploy"
 }
 
-func (self ModelKustomize) Prepare(pj DeployProject, phase string, branch string, assigner User, tag string) (o ModelKustomizePrepareOutput, err error) {
+func (k GitOpsPluginKustomize) Prepare(pj DeployProject, phase string, branch string, assigner User, tag string) (o GitOpsPrepareOutput, err error) {
 	o.status = DeployStatusFail
 	if tag == "" {
 		ecr, err := CreateECRInstance()
@@ -43,7 +48,7 @@ func (self ModelKustomize) Prepare(pj DeployProject, phase string, branch string
 	}
 
 	ph := pj.FindPhase(phase)
-	currentTag, err := ph.Destination.GetCurrentRevision(GetCurrentRevisionInput{github: self.github})
+	currentTag, err := ph.Destination.GetCurrentRevision(GetCurrentRevisionInput{github: k.github})
 	if err != nil {
 		return
 	}
@@ -53,7 +58,7 @@ func (self ModelKustomize) Prepare(pj DeployProject, phase string, branch string
 		return
 	}
 
-	commits, err := self.github.CommitsBetween(GitHubCommitsBetweenInput{
+	commits, err := k.github.CommitsBetween(GitHubCommitsBetweenInput{
 		Repository:    pj.GitHubRepository(),
 		Branch:        branch,
 		FirstCommitID: currentTag,
@@ -66,24 +71,24 @@ func (self ModelKustomize) Prepare(pj DeployProject, phase string, branch string
 		commitlog = commitlog + "- " + m + "\n"
 	}
 
-	prBranch, err := self.git.PushDockerImageTag(pj.ID, ph, tag, pj.DockerRepository())
+	prBranch, err := k.git.PushDockerImageTag(pj.ID, ph, tag, pj.DockerRepository())
 	if err != nil {
 		return
 	}
 
-	prID, prNum, err := self.github.CreatePullRequest(prBranch, fmt.Sprintf("Deploy %s %s", pj.ID, branch), commitlog)
+	prID, prNum, err := k.github.CreatePullRequest(prBranch, fmt.Sprintf("Deploy %s %s", pj.ID, branch), commitlog)
 	if err != nil {
 		return
 	}
 
 	if assigner.GitHubNodeID != "" {
-		err = self.github.UpdatePullRequest(prID, assigner.GitHubNodeID)
+		err = k.github.UpdatePullRequest(prID, assigner.GitHubNodeID)
 		if err != nil {
 			return
 		}
 	}
 
-	o = ModelKustomizePrepareOutput{
+	o = GitOpsPrepareOutput{
 		PullRequestID:     prID,
 		PullRequestNumber: prNum,
 		Branch:            prBranch,
@@ -92,13 +97,13 @@ func (self ModelKustomize) Prepare(pj DeployProject, phase string, branch string
 	return
 }
 
-func (self ModelKustomize) Commit(pullRequestID string) error {
+func (self ModelGitOps) Commit(pullRequestID string) error {
 	return self.github.MergePullRequest(pullRequestID)
 
 }
 
-func (self ModelKustomize) Deploy(pj DeployProject, phase string, option DeployOption) (do DeployOutput, err error) {
-	o, err := self.Prepare(pj, phase, option.Branch, option.Assigner, option.Tag)
+func (self ModelGitOps) Deploy(pj DeployProject, phase string, option DeployOption) (do DeployOutput, err error) {
+	o, err := self.plugin.Prepare(pj, phase, option.Branch, option.Assigner, option.Tag)
 	if err != nil {
 		return
 	}

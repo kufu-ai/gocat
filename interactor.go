@@ -30,7 +30,8 @@ type DeployUsecase interface {
 }
 
 type InteractorFactory struct {
-	kustomize InteractorKustomize
+	kanvas    InteractorGitOps
+	kustomize InteractorGitOps
 	jenkins   InteractorJenkins
 	job       InteractorJob
 	lambda    InteractorLambda
@@ -38,7 +39,14 @@ type InteractorFactory struct {
 }
 
 func NewInteractorFactory(c InteractorContext) InteractorFactory {
-	return InteractorFactory{kustomize: NewInteractorKustomize(c), jenkins: NewInteractorJenkins(c), job: NewInteractorJob(c), lambda: NewInteractorLambda(c), combine: NewInteractorCombine(c)}
+	return InteractorFactory{
+		kanvas:    NewInteractorKanavs(c),
+		kustomize: NewInteractorKustomize(c),
+		jenkins:   NewInteractorJenkins(c),
+		job:       NewInteractorJob(c),
+		lambda:    NewInteractorLambda(c),
+		combine:   NewInteractorCombine(c),
+	}
 }
 
 func (i InteractorFactory) Get(pj DeployProject, phase string) DeployUsecase {
@@ -50,6 +58,8 @@ func (i InteractorFactory) Get(pj DeployProject, phase string) DeployUsecase {
 
 func (i InteractorFactory) get(kind string) DeployUsecase {
 	switch kind {
+	case "kanvas":
+		return i.kanvas
 	case "kustomize":
 		return i.kustomize
 	case "job":
@@ -65,6 +75,8 @@ func (i InteractorFactory) get(kind string) DeployUsecase {
 
 func (i InteractorFactory) GetByParams(params string) DeployUsecase {
 	switch {
+	case strings.Contains(params, "kanvas"):
+		return i.kanvas
 	case strings.Contains(params, "kustomize"):
 		return i.kustomize
 	case strings.Contains(params, "job"):
