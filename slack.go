@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"strconv"
 
 	"github.com/nlopes/slack"
 	"github.com/nlopes/slack/slackevents"
@@ -27,6 +28,15 @@ func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(r.Body)
 	body := buf.String()
+	header := r.Header
+
+	if header.Get("X-Slack-Retry-Num") != "" {
+		slackRetryNum, _ := strconv.Atoi(header.Get("X-Slack-Retry-Num"))
+		if slackRetryNum > 0 {
+			return
+		}
+	}
+
 	eventsAPIEvent, err := slackevents.ParseEvent(json.RawMessage(body), slackevents.OptionVerifyToken(&slackevents.TokenComparator{VerificationToken: s.verificationToken}))
 	if err != nil {
 		fmt.Println(err)
