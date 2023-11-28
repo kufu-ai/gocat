@@ -8,7 +8,7 @@ require (
 	github.com/go-git/go-git/v5 v5.10.1
 	github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
 	github.com/shurcooL/githubv4 v0.0.0-20191006152017-6d1ea27df521
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.15.0
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2
 	gopkg.in/yaml.v2 v2.4.0
