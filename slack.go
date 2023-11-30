@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/nlopes/slack"
 	"github.com/nlopes/slack/slackevents"

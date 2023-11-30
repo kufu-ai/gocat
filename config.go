@@ -23,8 +23,6 @@ type CatConfig struct {
 	EnableAutoDeploy       bool // optional (default: false)
 }
 
-var Config CatConfig
-
 func findRepositoryName(repo string) string {
 	match := regexp.MustCompile("/([^/]+).git$").FindAllStringSubmatch(repo, -1)
 	if match == nil || len(match[0]) < 2 {
@@ -43,14 +41,14 @@ func findRepositoryOrg(repo string) string {
 	return match[0][1]
 }
 
-func InitConfig() (err error) {
+func InitConfig() (*CatConfig, error) {
 	configEnvs := []string{"CONFIG_MANIFEST_REPOSITORY"}
 	for _, configEnv := range configEnvs {
 		if os.Getenv(configEnv) == "" {
-			return fmt.Errorf("Set %s environment variable", configEnv)
+			return nil, fmt.Errorf("Set %s environment variable", configEnv)
 		}
 	}
-	Config = CatConfig{}
+	var Config = &CatConfig{}
 	Config.ManifestRepository = os.Getenv("CONFIG_MANIFEST_REPOSITORY")
 	Config.EnableAutoDeploy = os.Getenv("CONFIG_ENABLE_AUTO_DEPLOY") == "true"
 	Config.ArgoCDHost = os.Getenv("CONFIG_ARGOCD_HOST")
@@ -67,7 +65,7 @@ func InitConfig() (err error) {
 	case "aws/secrets-manager":
 		log.Print("Using aws/secrets-manager as secret store. Set SECRET_STORE env if you want to use another secret store")
 		if os.Getenv("SECRET_NAME") == "" {
-			return fmt.Errorf("Set SECRET_NAME environment variable")
+			return nil, fmt.Errorf("Set SECRET_NAME environment variable")
 		}
 		secret := getSecret(os.Getenv("SECRET_NAME"))
 		Config.GitHubAccessToken = secret.GitHubBotUserToken
@@ -75,7 +73,7 @@ func InitConfig() (err error) {
 		Config.SlackVerificationToken = secret.VerificationToken
 		Config.JenkinsBotToken = secret.JenkinsBotUserToken
 		Config.JenkinsJobToken = secret.JenkinsJobToken
-		return
+		return Config, nil
 
 	default:
 		log.Print("Using env as secret store. Set SECRET_STORE env if you want to use another secret store")
@@ -90,6 +88,6 @@ func InitConfig() (err error) {
 		Config.SlackVerificationToken = os.Getenv("CONFIG_SLACK_VERIFICATION_TOKEN")
 		Config.JenkinsBotToken = os.Getenv("CONFIG_JENKINS_BOT_TOKEN")
 		Config.JenkinsJobToken = os.Getenv("CONFIG_JENKINS_JOB_TOKEN")
-		return
+		return Config, nil
 	}
 }

@@ -23,19 +23,21 @@ import (
 // GitOperator is our wrapper aroud go-git to do GitOps, and
 // tagging commits to correlate them with the container image tags.
 type GitOperator struct {
-	auth       transport.AuthMethod
-	repo       string
-	repository *git.Repository
-	username   string
+	auth          transport.AuthMethod
+	repo          string
+	repository    *git.Repository
+	username      string
+	defaultBranch string
 }
 
-func CreateGitOperatorInstance(username, token, repo string) (g GitOperator) {
+func CreateGitOperatorInstance(username, token, repo, defaultBranch string) (g GitOperator) {
 	g.auth = &http.BasicAuth{
 		Username: username, // yes, this can be anything except an empty string
 		Password: token,
 	}
 	g.repo = repo
 	g.username = username
+	g.defaultBranch = defaultBranch
 	g.Clone()
 	return
 }
@@ -77,8 +79,8 @@ func (g GitOperator) PushDockerImageTag(id string, phase DeployPhase, tag string
 		return
 	}
 	refName := plumbing.Master
-	if Config.GitHubDefaultBranch != "" {
-		refName = plumbing.ReferenceName(Config.GitHubDefaultBranch)
+	if g.defaultBranch != "" {
+		refName = plumbing.ReferenceName(g.defaultBranch)
 	}
 
 	err = w.Checkout(&git.CheckoutOptions{
