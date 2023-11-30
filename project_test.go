@@ -16,7 +16,7 @@ func TestProjectFind(t *testing.T) {
 		},
 	}
 	want := DeployProject{
-		ID:   "test",
+		ID:   "testid",
 		Kind: "testkind",
 	}
 	got := pl.Find("testid")
