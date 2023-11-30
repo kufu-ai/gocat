@@ -24,10 +24,11 @@ import (
 // This is used by deploy models so that each deploy model
 // does not need to implement the same logic to interact with GitHub.
 type GitHub struct {
-	client     githubv4.Client
-	httpClient *http.Client
-	org        string
-	repo       string
+	client        githubv4.Client
+	httpClient    *http.Client
+	org           string
+	repo          string
+	defaultBranch string
 }
 
 type GitHubInput struct {
@@ -35,14 +36,14 @@ type GitHubInput struct {
 	Branch     string
 }
 
-func CreateGitHubInstance(token string, org string, repo string) GitHub {
+func CreateGitHubInstance(token, org, repo, defaultBranch string) GitHub {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
 	httpClient := oauth2.NewClient(context.Background(), src)
 
 	client := githubv4.NewClient(httpClient)
-	return GitHub{*client, httpClient, org, repo}
+	return GitHub{*client, httpClient, org, repo, defaultBranch}
 }
 
 func (g GitHub) GetFile(path string) (b []byte, err error) {
@@ -209,8 +210,8 @@ func (g GitHub) CreatePullRequest(branch string, title string, description strin
 	body := githubv4.String(fmt.Sprintf("from bot\n\n%s", description))
 	modify := githubv4.Boolean(true)
 	refName := "refs/heads/master"
-	if Config.GitHubDefaultBranch != "" {
-		refName = Config.GitHubDefaultBranch
+	if g.defaultBranch != "" {
+		refName = g.defaultBranch
 	}
 	input := githubv4.CreatePullRequestInput{
 		RepositoryID:        repoID,
