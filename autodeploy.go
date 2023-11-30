@@ -80,7 +80,11 @@ func (a AutoDeploy) checkAndDeploy(dp DeployProject, phase DeployPhase) {
 			{Title: "Tag", Value: tag, Short: true},
 		}
 		msg := slack.Attachment{Color: "#36a64f", Title: ":white_check_mark: Succeed to auto deploy", Fields: fields}
-		a.client.PostMessage(phase.NotifyChannel, slack.MsgOptionAttachments(msg))
+		_, _, err = a.client.PostMessage(phase.NotifyChannel, slack.MsgOptionAttachments(msg))
+		if err != nil {
+			log.Print(err)
+			return
+		}
 	}
 }
 
