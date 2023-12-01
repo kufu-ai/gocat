@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -194,7 +194,7 @@ func (g GitOperator) commit(w *git.Worktree, targetFilePath string, o OverWrite)
 		fmt.Println("[ERROR] Failed to Open file: ", xerrors.New(err.Error()))
 		return
 	}
-	b, err := ioutil.ReadAll(file)
+	b, err := io.ReadAll(file)
 	if err != nil {
 		fmt.Println("[ERROR] Failed to ReadAll file: ", xerrors.New(err.Error()))
 		return
