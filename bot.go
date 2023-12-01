@@ -49,5 +49,14 @@ func main() {
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "hello")
 	})
-	http.ListenAndServe(":3000", nil)
+
+	// As the Go documentation says, ListenAndServe always returns a non-nil error,
+	// and the error is usually ErrServerClosed on graceful stop.
+	//
+	// Therefore, we exit with 0 when the error is ErrServerClosed,
+	// and log the error then exit with 1 otherwise for diagnosis.
+	if err := http.ListenAndServe(":3000", nil); err != http.ErrServerClosed {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
