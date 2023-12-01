@@ -87,12 +87,3 @@ func (a AutoDeploy) checkAndDeploy(dp DeployProject, phase DeployPhase) {
 		}
 	}
 }
-
-func (a AutoDeploy) slackMessage(text string) slack.MsgOption {
-	listText := slack.NewTextBlockObject("mrkdwn", text, false, false)
-	listSection := slack.NewSectionBlock(listText, nil, nil)
-
-	return slack.MsgOptionBlocks(
-		listSection,
-	)
-}

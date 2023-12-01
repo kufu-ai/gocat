@@ -41,11 +41,6 @@ func (i InteractorContext) branchList(pj DeployProject, phase string) ([]slack.B
 	return []slack.Block{section, CloseButton()}, nil
 }
 
-func (i InteractorContext) plainBlock(msg string) []slack.Block {
-	blockObject := slack.NewTextBlockObject("mrkdwn", msg, false, false)
-	return []slack.Block{slack.NewSectionBlock(blockObject, nil, nil)}
-}
-
 func (i InteractorContext) plainBlocks(texts ...string) (blocks []slack.Block) {
 	for _, text := range texts {
 		block := slack.NewTextBlockObject("mrkdwn", text, false, false)
