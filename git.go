@@ -67,45 +67,9 @@ func (g GitOperator) DeleteBranch(branch string) (err error) {
 func (g GitOperator) PushDockerImageTag(id string, phase DeployPhase, tag string, targetTag string) (branch string, err error) {
 	branch = fmt.Sprintf("bot/docker-image-tag-%s-%s-%s", id, phase.Name, tag)
 
-	g.DeleteBranch(branch)
+	w, err := g.createAndCheckoutNewBranch(branch)
 	if err != nil {
-		fmt.Println("[ERROR] Failed to DeleteBranch: ", xerrors.New(err.Error()))
-	}
-
-	// checkout
-
-	w, err := g.repository.Worktree()
-	if err != nil {
-		return
-	}
-	refName := plumbing.Master
-	if g.defaultBranch != "" {
-		refName = plumbing.ReferenceName(g.defaultBranch)
-	}
-
-	err = w.Checkout(&git.CheckoutOptions{
-		Create: false,
-		Branch: refName,
-	})
-	if err != nil {
-		fmt.Println("[ERROR] Failed to Checkout master: ", xerrors.New(err.Error()))
-		return
-	}
-
-	err = w.Pull(&git.PullOptions{RemoteName: "origin", Auth: g.auth})
-	if err != nil && err != git.NoErrAlreadyUpToDate {
-		fmt.Println("[ERROR] Failed to Pull origin/master: ", xerrors.New(err.Error()))
-		g.Clone()
-	}
-	err = nil
-
-	err = w.Checkout(&git.CheckoutOptions{
-		Create: true,
-		Branch: plumbing.ReferenceName(branch),
-	})
-	if err != nil {
-		fmt.Println("[ERROR] Failed to Checkout workbranch: ", xerrors.New(err.Error()))
-		return
+		return "", err
 	}
 
 	err = g.commit(w, phase.Path, KustomizationOverWrite{tag, targetTag})
@@ -153,6 +117,50 @@ func (g GitOperator) PushDockerImageTag(id string, phase DeployPhase, tag string
 		fmt.Println("[ERROR] Failed to Push origin: ", xerrors.New(err.Error()))
 	}
 	return
+}
+
+func (g GitOperator) createAndCheckoutNewBranch(branch string) (*git.Worktree, error) {
+	if err := g.DeleteBranch(branch); err != nil {
+		fmt.Println("[ERROR] Failed to DeleteBranch: ", xerrors.New(err.Error()))
+	}
+
+	// checkout
+
+	w, err := g.repository.Worktree()
+	if err != nil {
+		return nil, err
+	}
+	refName := plumbing.Master
+	if g.defaultBranch != "" {
+		refName = plumbing.ReferenceName(g.defaultBranch)
+	}
+
+	err = w.Checkout(&git.CheckoutOptions{
+		Create: false,
+		Branch: refName,
+	})
+	if err != nil {
+		fmt.Println("[ERROR] Failed to Checkout master: ", xerrors.New(err.Error()))
+		return nil, err
+	}
+
+	err = w.Pull(&git.PullOptions{RemoteName: "origin", Auth: g.auth})
+	if err != nil && err != git.NoErrAlreadyUpToDate {
+		fmt.Println("[ERROR] Failed to Pull origin/master: ", xerrors.New(err.Error()))
+		g.Clone()
+	}
+	err = nil
+
+	err = w.Checkout(&git.CheckoutOptions{
+		Create: true,
+		Branch: plumbing.ReferenceName(branch),
+	})
+	if err != nil {
+		fmt.Println("[ERROR] Failed to Checkout workbranch: ", xerrors.New(err.Error()))
+		return nil, err
+	}
+
+	return w, nil
 }
 
 type ConfigMap struct {
