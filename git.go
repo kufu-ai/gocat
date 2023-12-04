@@ -4,16 +4,22 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
+	"github.com/go-git/go-billy/v5/osfs"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/storage"
+	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"golang.org/x/xerrors"
 	yaml "gopkg.in/yaml.v2"
@@ -28,9 +34,14 @@ type GitOperator struct {
 	repository    *git.Repository
 	username      string
 	defaultBranch string
+	// gitRoot is the root of the local git repository, used to
+	// clone and checkout the remote repository that contains the gitops config
+	// or the kustomize config we are going to modify.
+	// If empty, we will use in-memory filesystem.
+	gitRoot string
 }
 
-func CreateGitOperatorInstance(username, token, repo, defaultBranch string) (g GitOperator) {
+func CreateGitOperatorInstance(username, token, repo, defaultBranch, gitRoot string) (g GitOperator) {
 	g.auth = &http.BasicAuth{
 		Username: username, // yes, this can be anything except an empty string
 		Password: token,
@@ -38,13 +49,27 @@ func CreateGitOperatorInstance(username, token, repo, defaultBranch string) (g G
 	g.repo = repo
 	g.username = username
 	g.defaultBranch = defaultBranch
+	g.gitRoot = gitRoot
 	g.Clone()
 	return
 }
 
 func (g *GitOperator) Clone() error {
-	fs := memfs.New()
-	r, err := git.Clone(memory.NewStorage(), fs, &git.CloneOptions{
+	var (
+		storage storage.Storer
+		fs      billy.Filesystem
+	)
+	if g.gitRoot != "" {
+		fs = osfs.New(g.gitRoot)
+		storage = filesystem.NewStorage(
+			osfs.New(filepath.Join(g.gitRoot, ".git")),
+			cache.NewObjectLRUDefault(),
+		)
+	} else {
+		storage = memory.NewStorage()
+		fs = memfs.New()
+	}
+	r, err := git.Clone(storage, fs, &git.CloneOptions{
 		URL:  g.Repo(),
 		Auth: g.auth,
 	})
