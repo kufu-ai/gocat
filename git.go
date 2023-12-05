@@ -50,7 +50,9 @@ func CreateGitOperatorInstance(username, token, repo, defaultBranch, gitRoot str
 	g.username = username
 	g.defaultBranch = defaultBranch
 	g.gitRoot = gitRoot
-	g.Clone()
+	if err := g.Clone(); err != nil {
+		fmt.Println("[ERROR] Failed to Clone: ", xerrors.New(err.Error()))
+	}
 	return
 }
 
@@ -75,9 +77,6 @@ func (g *GitOperator) Clone() error {
 	})
 	g.repository = r
 
-	if err != nil {
-		fmt.Println("[ERROR] ", err)
-	}
 	return err
 }
 
@@ -172,7 +171,10 @@ func (g GitOperator) createAndCheckoutNewBranch(branch string) (*git.Worktree, e
 	err = w.Pull(&git.PullOptions{RemoteName: "origin", Auth: g.auth})
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		fmt.Println("[ERROR] Failed to Pull origin/master: ", xerrors.New(err.Error()))
-		g.Clone()
+		fmt.Println("[INFO] Running Clone to see if it fixes the issue")
+		if err := g.Clone(); err != nil {
+			fmt.Println("[ERROR] Failed to Clone: ", xerrors.New(err.Error()))
+		}
 	}
 	err = nil
 
