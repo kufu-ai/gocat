@@ -77,9 +77,6 @@ func (g *GitOperator) Clone() error {
 	})
 	g.repository = r
 
-	if err != nil {
-		fmt.Println("[ERROR] ", err)
-	}
 	return err
 }
 
