@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
+
+	gogit "github.com/go-git/go-git/v5"
 
 	"github.com/davinci-std/kanvas/client"
 	"github.com/davinci-std/kanvas/client/cli"
@@ -72,7 +75,22 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 	// Instead, we let kanvas to create pull requests against the master or the main branch of the repository
 	// as defined in the kanvas.yaml.
 
-	wt, err := k.git.createAndCheckoutNewBranch(head)
+	git := *k.git
+	git.repository = nil
+	git.repo = "https://github.com/" + k.github.org + "/" + pj.gitHubRepository + ".git"
+	if err := git.Clone(); err != nil {
+		if !errors.Is(err, gogit.ErrRepositoryAlreadyExists) {
+			return o, fmt.Errorf("failed to clone repository: %w", err)
+		}
+	}
+
+	defer func() {
+		if err := git.Clean(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+
+	wt, err := git.checkoutMainBranch()
 	if err != nil {
 		return o, err
 	}
@@ -88,6 +106,17 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 			},
 		},
 		PullRequestHead: head,
+		EnvVars: map[string]string{
+			// This is a hack to make kanvas to use a directory that we can clean up later.
+			// This is necessary to not leave any temporary files in random directories.
+			//
+			// You usually see json files containing information about the pull request created by
+			// kanvs apply command in this directory.
+			//
+			// We assume kanvas recursively creates a directory if it doesn't exist.
+			// That's why we don't create this .kanvastmp directory ourselves here.
+			"TMPDIR": filepath.Join(git.getLocalRepoRoot(), ".kanvastmp"),
+		},
 	}
 
 	if assigner.GitHubNodeID != "" {
@@ -112,6 +141,8 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 		path = filepath.Join(path, "kanvas.yaml")
 	}
 
+	realPath := wt.Filesystem.Join(git.getLocalRepoRoot(), path)
+
 	// We treat gocat "phase" as kanvas "environment".
 	//
 	// This means that kanvas.yaml need to have all the environments
@@ -133,7 +164,7 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 	// 	KANVAS_PULLREQUEST_HEAD=< head > \
 	// 	 kanvas apply --env <phase> --config <path> --skipped-jobs-outputs '{"image":{"tag":"<tag>"}}'
 	//
-	r, err := c.Apply(context.Background(), wt.Filesystem.Join(path), phase, applyOpts)
+	r, err := c.Apply(context.Background(), realPath, phase, applyOpts)
 	if err != nil {
 		return o, err
 	}
