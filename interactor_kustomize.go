@@ -123,6 +123,33 @@ func (i InteractorGitOps) Approve(params string, userID string, channel string) 
 
 func (i InteractorGitOps) Reject(params string, userID string) ([]slack.Block, error) {
 	p := strings.Split(params, "_")
+
+	if strings.HasPrefix(params, "PR") {
+		// The format of IDs for GitHub PullReques has changed
+		// e.g. PR_hogehoge as a whole needs to be passed as the ID,
+		// instead of "PR" or "hogehoge" only.
+		//
+		// Let's say you have a pull request with the ID "PR_hogehoge", you'll see the ActionValue like:
+		//
+		// 	deploy_kustomize_reject|PR_hogehoge_2_bot/docker-image-tag-project-foo-staging-14e308b
+		//
+		// If we used the "PR" as the PR ID, we'll see the following error:
+		//
+		// 	Could not resolve to a node with the global id of 'PR'
+		// 	[ERROR] Internal Server Error
+		//
+		// Similarly, if you used "hogehoge" as the PR ID, you'll see the following error:
+		//
+		// 	Could not resolve to a node with the global id of 'hogehoge'
+		// 	[ERROR] Internal Server Error
+		//
+		// See https://docs.github.com/en/graphql/guides/migrating-graphql-global-node-ids#determining-if-you-need-to-take-action
+		var a []string
+		a = append(a, p[0]+"_"+p[1])
+		a = append(a, p[2:]...)
+		p = a
+	}
+
 	return i.reject(p[0], p[1], p[2], userID)
 }
 
