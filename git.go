@@ -143,6 +143,36 @@ func (g GitOperator) PushDockerImageTag(id string, phase DeployPhase, tag string
 	return
 }
 
+func (g GitOperator) checkoutMainBranch() (*git.Worktree, error) {
+	w, err := g.repository.Worktree()
+	if err != nil {
+		return nil, err
+	}
+
+	refName := plumbing.Master
+	if g.defaultBranch != "" {
+		refName = plumbing.ReferenceName(g.defaultBranch)
+	}
+
+	if err := w.Checkout(&git.CheckoutOptions{
+		Create: false,
+		Branch: refName,
+	}); err != nil {
+		fmt.Println("[ERROR] Failed to Checkout master: ", xerrors.New(err.Error()))
+		return nil, err
+	}
+
+	if err := w.Pull(&git.PullOptions{RemoteName: "origin", Auth: g.auth}); err != nil && err != git.NoErrAlreadyUpToDate {
+		fmt.Println("[ERROR] Failed to Pull origin/master: ", xerrors.New(err.Error()))
+		fmt.Println("[INFO] Running Clone to see if it fixes the issue")
+		if err := g.Clone(); err != nil {
+			fmt.Println("[ERROR] Failed to Clone: ", xerrors.New(err.Error()))
+		}
+	}
+
+	return w, nil
+}
+
 func (g GitOperator) createAndCheckoutNewBranch(branch string) (*git.Worktree, error) {
 	if err := g.DeleteBranch(branch); err != nil {
 		fmt.Println("[ERROR] Failed to DeleteBranch: ", xerrors.New(err.Error()))
@@ -150,33 +180,10 @@ func (g GitOperator) createAndCheckoutNewBranch(branch string) (*git.Worktree, e
 
 	// checkout
 
-	w, err := g.repository.Worktree()
+	w, err := g.checkoutMainBranch()
 	if err != nil {
 		return nil, err
 	}
-	refName := plumbing.Master
-	if g.defaultBranch != "" {
-		refName = plumbing.ReferenceName(g.defaultBranch)
-	}
-
-	err = w.Checkout(&git.CheckoutOptions{
-		Create: false,
-		Branch: refName,
-	})
-	if err != nil {
-		fmt.Println("[ERROR] Failed to Checkout master: ", xerrors.New(err.Error()))
-		return nil, err
-	}
-
-	err = w.Pull(&git.PullOptions{RemoteName: "origin", Auth: g.auth})
-	if err != nil && err != git.NoErrAlreadyUpToDate {
-		fmt.Println("[ERROR] Failed to Pull origin/master: ", xerrors.New(err.Error()))
-		fmt.Println("[INFO] Running Clone to see if it fixes the issue")
-		if err := g.Clone(); err != nil {
-			fmt.Println("[ERROR] Failed to Clone: ", xerrors.New(err.Error()))
-		}
-	}
-	err = nil
 
 	err = w.Checkout(&git.CheckoutOptions{
 		Create: true,
