@@ -282,7 +282,20 @@ func (g GitHub) ClosePullRequest(prID string) error {
 	input := githubv4.ClosePullRequestInput{
 		PullRequestID: prID,
 	}
-	return g.client.Mutate(context.Background(), &mutate, input, nil)
+	if err := g.client.Mutate(context.Background(), &mutate, input, nil); err != nil {
+		// Without this, we end up seeing an unhelpful error message from gocat like the below when we fail to close a pull request:
+		//
+		// 	[INFO] Action Value: deploy_kustomize_reject|PR_hogehoge_2_bot/docker-image-tag-project-foo-staging-14e308b
+		// 	Could not resolve to a node with the global id of 'PR'
+		// 	[ERROR] Internal Server Error
+		//
+		// "Internal Server Error" is emitted in handler.go and "Could not resolve..." is emitted by GitHub API.
+		// The message lacks context and is not helpful for debugging.
+		// We want to see that the error is caused by the failure to close a pull request.
+		// We also want to see the inputs to the mutation to see which side of the mutation failed, us or GitHub.
+		return fmt.Errorf("unable to close pull request: input=%v, err=%v", input, err)
+	}
+	return nil
 }
 
 func (g GitHub) DeleteBranch(refName string) error {
