@@ -3,10 +3,11 @@ package main
 import (
 	"bytes"
 	"fmt"
-	yaml "gopkg.in/yaml.v2"
 	"regexp"
 	"strings"
 	"text/template"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 type PayloadVars struct {
@@ -34,6 +35,7 @@ type DeployPhase struct {
 }
 
 type DeployProject struct {
+	// ID is the name of the configmap that defines the project.
 	ID                  string
 	Kind                string
 	jenkinsJob          string
