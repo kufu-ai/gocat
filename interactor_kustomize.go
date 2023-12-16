@@ -39,7 +39,12 @@ func (i InteractorGitOps) Request(pj DeployProject, phase string, branch string,
 			return
 		}
 
-		txt := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("<@%s>\n*%s*\n*%s*\n*%s* ブランチをデプロイしますか?\nhttps://github.com/%s/%s/pull/%d", assigner, pj.GitHubRepository(), phase, branch, i.github.org, i.github.repo, o.PullRequestNumber), false, false)
+		prHTMLURL := o.PullRequestHTMLURL
+		if prHTMLURL == "" {
+			prHTMLURL = fmt.Sprintf("https://github.com/%s/%s/pull/%d", i.github.org, i.github.repo, o.PullRequestNumber)
+		}
+
+		txt := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("<@%s>\n*%s*\n*%s*\n*%s* ブランチをデプロイしますか?\n%s", assigner, pj.GitHubRepository(), phase, branch, prHTMLURL), false, false)
 		btnTxt := slack.NewTextBlockObject("plain_text", "Deploy", false, false)
 		btn := slack.NewButtonBlockElement("", fmt.Sprintf("%s|%s_%d", i.actionHeader("approve"), o.PullRequestID, o.PullRequestNumber), btnTxt)
 		blocks = append(blocks, slack.NewSectionBlock(txt, nil, slack.NewAccessory(btn)))

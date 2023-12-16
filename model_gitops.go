@@ -7,10 +7,11 @@ type ModelGitOps struct {
 }
 
 type GitOpsPrepareOutput struct {
-	PullRequestID     string
-	PullRequestNumber int
-	Branch            string
-	status            DeployStatus
+	PullRequestID      string
+	PullRequestNumber  int
+	PullRequestHTMLURL string
+	Branch             string
+	status             DeployStatus
 }
 
 func (self GitOpsPrepareOutput) Status() DeployStatus {
