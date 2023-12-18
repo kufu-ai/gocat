@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
+	"strconv"
 
 	"github.com/davinci-std/kanvas/client"
 	"github.com/davinci-std/kanvas/client/cli"
@@ -138,33 +140,9 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 		return o, err
 	}
 
-	var (
-		prCreated bool
-		prID      string
-		prNum     int
-		// prHTMLURL string
-	)
+	prs := r.GetPullRequests()
 
-	for _, o := range r.Outputs {
-		if o.PullRequest != nil {
-			prCreated = true
-
-			prID = fmt.Sprintf("%d", o.PullRequest.ID)
-			prNum = o.PullRequest.Number
-			// prHTMLURL is the URL to the pull request in the config repository,
-			// not the repository that contains kanvas.yaml.
-			//
-			// This is necessary because unlike the kustomize model that creates pull requests
-			// against the specified repository, kanvas uses the kanvas.yaml in the repository
-			// specified in the gocat configmap, to create pull requests against the repository
-			// specified in the kanvas.yaml.
-			// prHTMLURL = o.PullRequest.HTMLURL
-
-			break
-		}
-	}
-
-	if !prCreated {
+	if len(prs) == 0 {
 		// Instead of determining if the desired image tag is already deployed or not by
 		// getting the current tag using:
 		//
@@ -175,14 +153,31 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 		// That's possible because, if the image.tag is already deployed, kanvas won't create a pull request.
 		o.status = DeployStatusAlready
 		return o, nil
+	} else if len(prs) > 1 {
+		fmt.Println("gocat does not yet support multiple pull requests created by kanvas: ", prs)
+		return o, errors.New("gocat does not yet support multiple pull requests created by kanvas")
+	}
+
+	pr := prs[0]
+
+	prNum, err := strconv.Atoi(pr.Number)
+	if err != nil {
+		return o, fmt.Errorf("failed to convert pull request number to int: %w", err)
 	}
 
 	o = GitOpsPrepareOutput{
-		PullRequestID:     prID,
+		PullRequestID:     pr.NodeID,
 		PullRequestNumber: prNum,
-		// PullRequestHTMLURL: prHTMLURL,
-		Branch: head,
-		status: DeployStatusSuccess,
+		// PullRequestHTMLURL is the URL to the pull request in the config repository,
+		// not the repository that contains kanvas.yaml.
+		//
+		// This is necessary because unlike the kustomize model that creates pull requests
+		// against the specified repository, kanvas uses the kanvas.yaml in the repository
+		// specified in the gocat configmap, to create pull requests against the repository
+		// specified in the kanvas.yaml.
+		PullRequestHTMLURL: pr.HTMLURL,
+		Branch:             head,
+		status:             DeployStatusSuccess,
 	}
 	return o, nil
 }
