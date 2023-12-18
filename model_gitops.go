@@ -7,6 +7,11 @@ type ModelGitOps struct {
 }
 
 type GitOpsPrepareOutput struct {
+	// PullRequestID is the node ID of the pull request.
+	// It's used to merge and close the pull request using GitHub GraphQL API.
+	//
+	// Note that this is not the pull request ID, which is an integer,
+	// and used by non-GraphQL API to identify a pull request.
 	PullRequestID      string
 	PullRequestNumber  int
 	PullRequestHTMLURL string
