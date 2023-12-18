@@ -83,8 +83,12 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 		SkippedComponents: map[string]map[string]string{
 			// Any kanvas.yaml that can be used by gocat needs to have
 			// "image" component that uses the kanavs's docker provider for building the container image.
+			//
+			// We also assume that the components(like kustomize, argocd app, etc,) that depends on the "image" component uses
+			// either the "tag" or the "id" output of the "image" component for the deployment.
 			"image": {
 				"tag": tag,
+				"id":  tag,
 			},
 		},
 		PullRequestHead: head,
@@ -131,7 +135,7 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 	//
 	// 	KANVAS_PULLREQUEST_ASSIGNEE_IDS=< assigner.GitHubNodeID > \
 	// 	KANVAS_PULLREQUEST_HEAD=< head > \
-	// 	 kanvas apply --env <phase> --config <path> --skipped-jobs-outputs '{"image":{"tag":"<tag>"}}'
+	// 	 kanvas apply --env <phase> --config <path> --skipped-jobs-outputs '{"image":{"id":"<tag>","tag":"<tag>"}}'
 	//
 	r, err := c.Apply(context.Background(), wt.Filesystem.Join(path), phase, applyOpts)
 	if err != nil {
