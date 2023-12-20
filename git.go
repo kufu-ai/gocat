@@ -29,7 +29,12 @@ import (
 // GitOperator is our wrapper aroud go-git to do GitOps, and
 // tagging commits to correlate them with the container image tags.
 type GitOperator struct {
-	auth          transport.AuthMethod
+	auth transport.AuthMethod
+	// repo is the remote repository that contains the gitops config
+	// we are going to modify, or the kanvas config we are going to use for deployment.
+	//
+	// It needs to be in the form of "https://github.com/owner/repo.git",
+	// not "owner/repo" or "repo".
 	repo          string
 	repository    *git.Repository
 	username      string
