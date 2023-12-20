@@ -61,15 +61,65 @@ func CreateGitOperatorInstance(username, token, repo, defaultBranch, gitRoot str
 	return
 }
 
+// getLocalRepoRoot returns the path from the gocat's current working directory
+// to the root of the local git repository.
+//
+// The caller needs to be aware that the returned path can be either an absolute path
+// or a relative path.
+//
+// The returned path is relative to the gocat's current working directory,
+// if gitRoot is not an absolute path.
+//
+// In case you run gocat like this:
+//
+//	GOCAT_GITROOT=path/to/gitroot gocat ...
+//
+// it results in getLocalRepoRoot() returning "path/to/gitroot/$host/$owner/$repo".
+//
+// In case you run gocat like this:
+//
+//	GOCAT_GITROOT=/path/to/gitroot gocat ...
+//
+// it returns "/path/to/gitroot/$host/$owner/$repo".
+//
+// If gitRoot is empty, which means we are using in-memory filesystem,
+// we will return an empty string.
+func (g *GitOperator) getLocalRepoRoot() string {
+	if g.gitRoot != "" {
+		// Without this modification, we will end up with a nested directory structure like this:
+		//
+		// - $GOCAT_GITROOT
+		//   - https:
+		//     - github.com
+		//       - zaiminc
+		//         - gocat.git
+		//
+		// which is not what we want.
+		//
+		// Instead, we want:
+		//
+		// - $GOCAT_GITROOT
+		//  - github.com
+		//    - zaiminc
+		//      - gocat
+		repo := strings.ReplaceAll(g.repo, "https://", "")
+		repo = strings.ReplaceAll(repo, "/", string(os.PathSeparator))
+		repo = strings.TrimSuffix(repo, ".git")
+		return filepath.Join(g.gitRoot, repo)
+	}
+	return ""
+}
+
 func (g *GitOperator) Clone() error {
 	var (
 		storage storage.Storer
 		fs      billy.Filesystem
 	)
 	if g.gitRoot != "" {
-		fs = osfs.New(g.gitRoot)
+		repoRoot := g.getLocalRepoRoot()
+		fs = osfs.New(repoRoot)
 		storage = filesystem.NewStorage(
-			osfs.New(filepath.Join(g.gitRoot, ".git")),
+			osfs.New(filepath.Join(repoRoot, ".git")),
 			cache.NewObjectLRUDefault(),
 		)
 	} else {
@@ -83,6 +133,24 @@ func (g *GitOperator) Clone() error {
 	g.repository = r
 
 	return err
+}
+
+func (g GitOperator) Clean() error {
+	if p := g.getLocalRepoRoot(); p != "" {
+		// Do our best not to delete unrelated and unintended files!
+		//
+		// If there's a .git directory, it is more likely a git repository created gocat,
+		// so we can safely delete it.
+		dotGit := filepath.Join(p, ".git")
+		if _, err := os.Stat(dotGit); err != nil {
+			return fmt.Errorf("unable to stat %s: %w", dotGit, err)
+		}
+		if err := os.RemoveAll(p); err != nil {
+			return fmt.Errorf("unable to remove %s: %w", p, err)
+		}
+	}
+
+	return nil
 }
 
 func (g GitOperator) Repo() string {
