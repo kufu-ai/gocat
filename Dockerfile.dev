@@ -7,6 +7,14 @@ RUN apt-get update && \
   unzip awscliv2.zip && \
   ./aws/install
 
+ENV KANVAS_VERSION=0.8.0
+
+RUN apt install -y curl \
+    && curl -LO https://github.com/davinci-std/kanvas/releases/download/v${KANVAS_VERSION}/kanvas_${KANVAS_VERSION}_linux_amd64.tar.gz \
+    && tar -xzf kanvas_${KANVAS_VERSION}_linux_amd64.tar.gz \
+    && mv kanvas /usr/local/bin/kanvas \
+    && rm kanvas_${KANVAS_VERSION}_linux_amd64.tar.gz
+
 RUN mkdir /bot
 WORKDIR /bot
 
