@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 
@@ -98,6 +99,12 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 
 	c := cli.New()
 
+	tmpdir := filepath.Join(git.getLocalRepoRoot(), ".kanvastmp")
+
+	if err := os.MkdirAll(tmpdir, 0755); err != nil {
+		return o, fmt.Errorf("failed to create .kanvastmp directory: %w", err)
+	}
+
 	applyOpts := client.ApplyOptions{
 		SkippedComponents: map[string]map[string]string{
 			// Any kanvas.yaml that can be used by gocat needs to have
@@ -120,7 +127,7 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 			//
 			// We assume kanvas recursively creates a directory if it doesn't exist.
 			// That's why we don't create this .kanvastmp directory ourselves here.
-			"TMPDIR": filepath.Join(git.getLocalRepoRoot(), ".kanvastmp"),
+			"TMPDIR": tmpdir,
 		},
 	}
 
