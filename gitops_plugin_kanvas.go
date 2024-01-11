@@ -128,6 +128,9 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 			// We assume kanvas recursively creates a directory if it doesn't exist.
 			// That's why we don't create this .kanvastmp directory ourselves here.
 			"TMPDIR": tmpdir,
+			// kanvas requires the token to be set in the GITHUB_TOKEN envvar,
+			// where gocat expects the token to be set in the CONFIG_GITHUB_ACCESS_TOKEN envvar.
+			"GITHUB_TOKEN": os.Getenv("CONFIG_GITHUB_ACCESS_TOKEN"),
 		},
 	}
 
