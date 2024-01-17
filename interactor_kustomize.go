@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -26,18 +27,30 @@ func (i InteractorGitOps) Request(pj DeployProject, phase string, branch string,
 	user := i.userList.FindBySlackUserID(assigner)
 
 	go func() {
+		defer func() {
+			log.Printf("[INFO] Existing the goroutine for Prepare")
+		}()
+
+		log.Printf("[INFO] Preparing to deploy %s %s %s", pj.ID, phase, branch)
+
 		o, err := i.model.Prepare(pj, phase, branch, user, "")
 		if err != nil {
+			log.Printf("[ERROR] %s", err.Error())
+
 			blocks := i.plainBlocks(err.Error())
 			i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...))
 			return
 		}
 
 		if o.Status() == DeployStatusAlready {
+			log.Printf("[INFO] Already Deployed in this revision: %s %s %s", pj.ID, phase, branch)
+
 			blocks = i.plainBlocks("Already Deployed in this revision")
 			i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...))
 			return
 		}
+
+		log.Printf("[INFO] Prepared to deploy %s %s %s", pj.ID, phase, branch)
 
 		prHTMLURL := o.PullRequestHTMLURL
 		if prHTMLURL == "" {
