@@ -116,6 +116,9 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 				"tag": tag,
 				"id":  tag,
 			},
+			// This is an opinionated convention that we use in gocat.
+			// You can add any component named "prereq" in kanvas.yaml, and it is not used when triggered via gocat.
+			"prereq": {},
 		},
 		PullRequestHead: head,
 		EnvVars: map[string]string{
