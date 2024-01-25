@@ -15,7 +15,7 @@ FROM debian:bullseye AS deps
 
 RUN apt update && apt install -y curl
 
-ENV KANVAS_VERSION=0.8.0
+ENV KANVAS_VERSION=0.9.3
 
 RUN curl -LO https://github.com/davinci-std/kanvas/releases/download/v${KANVAS_VERSION}/kanvas_${KANVAS_VERSION}_linux_amd64.tar.gz \
     && tar -xzf kanvas_${KANVAS_VERSION}_linux_amd64.tar.gz \

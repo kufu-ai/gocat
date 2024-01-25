@@ -22,8 +22,8 @@ github.com/cyphar/filepath-securejoin v0.2.4/go.mod h1:aPGpWjXOXUn2NCNjFvBE6aRxG
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/davinci-std/kanvas v0.8.0 h1:XZJ0WF8goJv5/tAiQ+X7hNjXUnI/D19fzOIfQI8oReY=
-github.com/davinci-std/kanvas v0.8.0/go.mod h1:J0GDS+y2SSHcCpw8F1JVTEECKMQe3oKwP4KT3qcwkNU=
+github.com/davinci-std/kanvas v0.9.3 h1:LdtwmbZfN2mXFTgaoTtCovD27zR8/K9AEzS1C/S6uEM=
+github.com/davinci-std/kanvas v0.9.3/go.mod h1:J0GDS+y2SSHcCpw8F1JVTEECKMQe3oKwP4KT3qcwkNU=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
 github.com/elazarl/goproxy v0.0.0-20230808193330-2592e75ae04a h1:mATvB/9r/3gvcejNsXKSkQ6lcIaNec2nyfOdlTBR2lU=
 github.com/emicklei/go-restful/v3 v3.9.0 h1:XwGDlfxEnQZzuopoqxwSEllNcCOM9DhhFyhFIIGKwxE=
