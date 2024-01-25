@@ -24,6 +24,8 @@ RUN curl -LO https://github.com/davinci-std/kanvas/releases/download/v${KANVAS_V
 
 FROM debian:bullseye
 
+RUN apt update && apt install -y git
+
 WORKDIR /src
 COPY --from=build /src/gocat /src/gocat
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
