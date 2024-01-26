@@ -69,7 +69,9 @@ func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}`, userID)
 
 		// Post close json back to response URL to close the message
-		http.Post(interactionRequest.ResponseURL, "application/json", bytes.NewBuffer([]byte(closeStr)))
+		if _, err := http.Post(interactionRequest.ResponseURL, "application/json", bytes.NewBuffer([]byte(closeStr))); err != nil {
+			log.Printf("[ERROR] Failed to post close action response: %v", err)
+		}
 		return
 	}
 	log.Printf("[INFO] Action Value: %s", actionValue)
@@ -80,7 +82,9 @@ func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Print("[ERROR] An unknown error occurred")
 	responseBytes := getSlackError("Server Error", "An unknown error occurred", userID)
-	http.Post(interactionRequest.ResponseURL, "application/json", bytes.NewBuffer([]byte(responseBytes)))
+	if _, err := http.Post(interactionRequest.ResponseURL, "application/json", bytes.NewBuffer([]byte(responseBytes))); err != nil {
+		log.Printf("[ERROR] Failed to post unknown error response: %v", err)
+	}
 }
 
 func (h interactionHandler) Deploy(w http.ResponseWriter, interactionRequest slack.InteractionCallback) {
@@ -131,17 +135,23 @@ func (h interactionHandler) Deploy(w http.ResponseWriter, interactionRequest sla
 	responseData := slack.NewBlockMessage(blocks...)
 	responseData.ReplaceOriginal = true
 	responseBytes, _ := json.Marshal(responseData)
-	http.Post(interactionRequest.ResponseURL, "application/json", bytes.NewBuffer(responseBytes))
+	if _, err := http.Post(interactionRequest.ResponseURL, "application/json", bytes.NewBuffer(responseBytes)); err != nil {
+		log.Printf("[ERROR] Failed to post deploy action response: %v", err)
+	}
 }
 
 func (h interactionHandler) postForbiddenError(responseURL string, userID string) {
 	log.Print("[ERROR] Forbidden Error")
 	responseBytes := getSlackError("Forbidden Error", "Please contact admin.", userID)
-	http.Post(responseURL, "application/json", bytes.NewBuffer(responseBytes))
+	if _, err := http.Post(responseURL, "application/json", bytes.NewBuffer(responseBytes)); err != nil {
+		log.Printf("[ERROR] Failed to post forbidden error response: %v", err)
+	}
 }
 
 func (h interactionHandler) postInternalServerError(responseURL string, userID string) {
 	log.Print("[ERROR] Internal Server Error")
 	responseBytes := getSlackError("Internal Server Error", "Please contact admin.", userID)
-	http.Post(responseURL, "application/json", bytes.NewBuffer(responseBytes))
+	if _, err := http.Post(responseURL, "application/json", bytes.NewBuffer(responseBytes)); err != nil {
+		log.Printf("[ERROR] Failed to post internal server error response: %v", err)
+	}
 }
