@@ -28,7 +28,7 @@ func (i InteractorGitOps) Request(pj DeployProject, phase string, branch string,
 
 	go func() {
 		defer func() {
-			log.Printf("[INFO] Existing the goroutine for Prepare")
+			log.Printf("[INFO] Exiting the goroutine for Prepare")
 		}()
 
 		log.Printf("[INFO] Preparing to deploy %s %s %s", pj.ID, phase, branch)
