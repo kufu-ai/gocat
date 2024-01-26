@@ -26,7 +26,11 @@ type SlackListener struct {
 
 func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(r.Body)
+	if _, err := buf.ReadFrom(r.Body); err != nil {
+		fmt.Printf("[ERROR] Failed to read request body: %s", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	body := buf.String()
 	header := r.Header
 
@@ -41,6 +45,7 @@ func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	if eventsAPIEvent.Type == slackevents.URLVerification {
 		var r *slackevents.ChallengeResponse
@@ -48,16 +53,24 @@ func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 		w.Header().Set("Content-Type", "text")
-		w.Write([]byte(r.Challenge))
+		if _, err := w.Write([]byte(r.Challenge)); err != nil {
+			fmt.Printf("[ERROR] Failed to write challenge response: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
 	}
 
 	if eventsAPIEvent.Type == slackevents.CallbackEvent {
 		innerEvent := eventsAPIEvent.InnerEvent
 		switch ev := innerEvent.Data.(type) {
 		case *slackevents.AppMentionEvent:
-			s.handleMessageEvent(ev)
+			if err := s.handleMessageEvent(ev); err != nil {
+				log.Println("[ERROR] ", err)
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 		}
 	}
 }

@@ -150,8 +150,12 @@ func (p *ProjectList) Reload() {
 		pj.funcName = cm.Data["FuncName"]
 		pj.Alias = cm.Data["Alias"]
 		pj.DisableBranchDeploy = cm.Data["DisableBranchDeploy"] == "true"
-		yaml.Unmarshal([]byte(cm.Data["Steps"]), &pj.steps)
-		yaml.Unmarshal([]byte(cm.Data["Phases"]), &pj.Phases)
+		if err := yaml.Unmarshal([]byte(cm.Data["Steps"]), &pj.steps); err != nil {
+			fmt.Printf("[ERROR] Failed to parse steps for %s: %s\n", pj.ID, err)
+		}
+		if err := yaml.Unmarshal([]byte(cm.Data["Phases"]), &pj.Phases); err != nil {
+			fmt.Printf("[ERROR] Failed to parse phases for %s: %s\n", pj.ID, err)
+		}
 		for i, phase := range pj.Phases {
 			if phase.Kind == "" {
 				pj.Phases[i].Kind = pj.Kind
