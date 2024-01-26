@@ -66,18 +66,24 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 	// Only response mention to bot. Ignore else.
 	log.Print(ev.Text)
 	if regexp.MustCompile(`help`).MatchString(ev.Text) {
-		s.client.PostMessage(ev.Channel, s.helpMessage())
+		if _, _, err := s.client.PostMessage(ev.Channel, s.helpMessage()); err != nil {
+			log.Println("[ERROR] ", err)
+		}
 		return nil
 	}
 	if regexp.MustCompile(`ls`).MatchString(ev.Text) {
-		s.client.PostMessage(ev.Channel, s.projectListMessage())
+		if _, _, err := s.client.PostMessage(ev.Channel, s.projectListMessage()); err != nil {
+			log.Println("[ERROR] ", err)
+		}
 		return nil
 	}
 	if regexp.MustCompile(`reload`).MatchString(ev.Text) {
 		s.projectList.Reload()
 		s.userList.Reload()
 		section := slack.NewSectionBlock(slack.NewTextBlockObject("mrkdwn", "Deploy Projects and Users is Reloaded", false, false), nil, nil)
-		s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(section))
+		if _, _, err := s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(section)); err != nil {
+			log.Println("[ERROR] ", err)
+		}
 		return nil
 	}
 
@@ -89,7 +95,9 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 		target, err := s.projectList.FindByAlias(commands[1])
 		if err != nil {
 			log.Println("[ERROR] ", err)
-			s.client.PostMessage(ev.Channel, s.errorMessage(err.Error()))
+			if _, _, err := s.client.PostMessage(ev.Channel, s.errorMessage(err.Error())); err != nil {
+				log.Println("[ERROR] ", err)
+			}
 			return nil
 		}
 
@@ -98,11 +106,15 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 		blocks, err := interactor.BranchList(target, phase)
 		if err != nil {
 			log.Println("[ERROR] ", err)
-			s.client.PostMessage(ev.Channel, s.errorMessage(err.Error()))
+			if _, _, err := s.client.PostMessage(ev.Channel, s.errorMessage(err.Error())); err != nil {
+				log.Println("[ERROR] ", err)
+			}
 			return nil
 		}
 
-		s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(blocks...))
+		if _, _, err := s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(blocks...)); err != nil {
+			log.Println("[ERROR] ", err)
+		}
 		return nil
 	}
 	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|sandbox|stg|pro|prd)`).FindAllStringSubmatch(ev.Text, -1); match != nil {
@@ -111,7 +123,9 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 		target, err := s.projectList.FindByAlias(commands[1])
 		if err != nil {
 			log.Println("[ERROR] ", err)
-			s.client.PostMessage(ev.Channel, s.errorMessage(err.Error()))
+			if _, _, err := s.client.PostMessage(ev.Channel, s.errorMessage(err.Error())); err != nil {
+				log.Println("[ERROR] ", err)
+			}
 			return nil
 		}
 
@@ -120,26 +134,36 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 		blocks, err := interactor.Request(target, phase, target.DefaultBranch(), ev.User, ev.Channel)
 		if err != nil {
 			log.Println("[ERROR] ", err)
-			s.client.PostMessage(ev.Channel, s.errorMessage(err.Error()))
+			if _, _, err := s.client.PostMessage(ev.Channel, s.errorMessage(err.Error())); err != nil {
+				log.Println("[ERROR] ", err)
+			}
 			return nil
 		}
 
-		s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(blocks...))
+		if _, _, err := s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(blocks...)); err != nil {
+			log.Println("[ERROR] ", err)
+		}
 		return nil
 	}
 	if regexp.MustCompile(`deploy staging`).MatchString(ev.Text) {
 		msgOpt := s.SelectDeployTarget("staging")
-		s.client.PostMessage(ev.Channel, msgOpt)
+		if _, _, err := s.client.PostMessage(ev.Channel, msgOpt); err != nil {
+			log.Println("[ERROR] ", err)
+		}
 		return nil
 	}
 	if regexp.MustCompile(`deploy production`).MatchString(ev.Text) {
 		msgOpt := s.SelectDeployTarget("production")
-		s.client.PostMessage(ev.Channel, msgOpt)
+		if _, _, err := s.client.PostMessage(ev.Channel, msgOpt); err != nil {
+			log.Println("[ERROR] ", err)
+		}
 		return nil
 	}
 	if regexp.MustCompile(`deploy sandbox`).MatchString(ev.Text) {
 		msgOpt := s.SelectDeployTarget("sandbox")
-		s.client.PostMessage(ev.Channel, msgOpt)
+		if _, _, err := s.client.PostMessage(ev.Channel, msgOpt); err != nil {
+			log.Println("[ERROR] ", err)
+		}
 		return nil
 	}
 	return nil

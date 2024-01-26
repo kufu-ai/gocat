@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/nlopes/slack"
@@ -59,7 +60,9 @@ func (i InteractorJob) approve(target string, phase string, branch string, userI
 			{Title: "error", Value: err.Error()},
 		}
 		msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed to deploy %s %s", pj.ID, phase), Fields: fields}
-		i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
+		if _, _, err := i.client.PostMessage(channel, slack.MsgOptionAttachments(msg)); err != nil {
+			log.Printf("Failed to post message: %s", err.Error())
+		}
 		return
 	}
 
@@ -70,11 +73,15 @@ func (i InteractorJob) approve(target string, phase string, branch string, userI
 			fields := []slack.AttachmentField{{Title: "user", Value: "<@" + userID + ">"}}
 			if err != nil {
 				msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed %s execution", do.Name), Fields: fields}
-				i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
+				if _, _, err := i.client.PostMessage(channel, slack.MsgOptionAttachments(msg)); err != nil {
+					log.Printf("Failed to post message: %s", err.Error())
+				}
 				return
 			}
 			msg := slack.Attachment{Color: "#36a64f", Title: fmt.Sprintf("Succeed %s Job execution", do.Name), Fields: fields}
-			i.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
+			if _, _, err := i.client.PostMessage(channel, slack.MsgOptionAttachments(msg)); err != nil {
+				log.Printf("Failed to post message: %s", err.Error())
+			}
 		}()
 	}
 

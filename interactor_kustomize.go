@@ -38,7 +38,9 @@ func (i InteractorGitOps) Request(pj DeployProject, phase string, branch string,
 			log.Printf("[ERROR] %s", err.Error())
 
 			blocks := i.plainBlocks(err.Error())
-			i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...))
+			if _, _, err := i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...)); err != nil {
+				log.Printf("Failed to post message: %s", err)
+			}
 			return
 		}
 
@@ -46,7 +48,9 @@ func (i InteractorGitOps) Request(pj DeployProject, phase string, branch string,
 			log.Printf("[INFO] Already Deployed in this revision: %s %s %s", pj.ID, phase, branch)
 
 			blocks = i.plainBlocks("Already Deployed in this revision")
-			i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...))
+			if _, _, err := i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...)); err != nil {
+				log.Printf("Failed to post message: %s", err)
+			}
 			return
 		}
 
@@ -65,7 +69,9 @@ func (i InteractorGitOps) Request(pj DeployProject, phase string, branch string,
 		closeBtnTxt := slack.NewTextBlockObject("plain_text", "Close", false, false)
 		closeBtn := slack.NewButtonBlockElement("", fmt.Sprintf("%s|%s_%d_%s", i.actionHeader("reject"), o.PullRequestID, o.PullRequestNumber, o.Branch), closeBtnTxt)
 		blocks = append(blocks, slack.NewActionBlock("", closeBtn))
-		i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...))
+		if _, _, err := i.client.PostMessage(channel, slack.MsgOptionBlocks(blocks...)); err != nil {
+			log.Printf("Failed to post message: %s", err)
+		}
 	}()
 
 	return i.plainBlocks("Now creating pull request..."), nil
