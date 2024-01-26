@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/aws/aws-sdk-go v1.49.2
-	github.com/davinci-std/kanvas v0.9.3
+	github.com/davinci-std/kanvas v0.9.4
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/nlopes/slack v0.6.1-0.20191106133607-d06c2a2b3249
