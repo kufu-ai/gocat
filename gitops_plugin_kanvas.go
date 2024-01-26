@@ -120,6 +120,7 @@ func (k GitOpsPluginKanvas) Prepare(pj DeployProject, phase string, branch strin
 			// You can add any component named "prereq" in kanvas.yaml, and it is not used when triggered via gocat.
 			"prereq": {},
 		},
+		GitUserName:     git.username,
 		PullRequestHead: head,
 		EnvVars: map[string]string{
 			// This is a hack to make kanvas to use a directory that we can clean up later.
