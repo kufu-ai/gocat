@@ -39,14 +39,20 @@ func getSlackError(system, msg string, user string) []byte {
 func (h interactionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Parse input from request
 	if err := r.ParseForm(); err != nil {
+		log.Printf("[ERROR] Failed to parse form: %s", err)
 		// getSlackError is a helper to quickly render errors back to slack
 		responseBytes := getSlackError("Server Error", "An unknown error occurred", "unkown")
-		w.Write(responseBytes) // not display message on slack
+		_, _ = w.Write(responseBytes) // not display message on slack
 		return
 	}
 
 	interactionRequest := slack.InteractionCallback{}
-	json.Unmarshal([]byte(r.PostForm.Get("payload")), &interactionRequest)
+	if err := json.Unmarshal([]byte(r.PostForm.Get("payload")), &interactionRequest); err != nil {
+		log.Printf("[ERROR] Failed to unmarshal interaction request: %s", err)
+		responseBytes := getSlackError("Server Error", "An unknown error occurred", "unkown")
+		_, _ = w.Write(responseBytes) // not display message on slack
+		return
+	}
 
 	// Get the action from the request, it'll always be the first one provided in my case
 	var actionValue string

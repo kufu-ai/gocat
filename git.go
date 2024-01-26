@@ -195,7 +195,10 @@ func (g GitOperator) PushDockerImageTag(id string, phase DeployPhase, tag string
 				When:  time.Now(),
 			},
 		})
-	g.repository.Storer.SetReference(plumbing.NewReferenceFromStrings(branch, hash.String()))
+	if err := g.repository.Storer.SetReference(plumbing.NewReferenceFromStrings(branch, hash.String())); err != nil {
+		fmt.Println("[ERROR] Failed to SetReference: ", xerrors.New(err.Error()))
+		return "", err
+	}
 
 	// push
 	remote, err := g.repository.Remote("origin")
