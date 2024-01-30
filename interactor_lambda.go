@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/nlopes/slack"
@@ -43,7 +44,9 @@ func (self InteractorLambda) approve(target string, phase string, branch string,
 				{Title: "error", Value: err.Error()},
 			}
 			msg := slack.Attachment{Color: "#e01e5a", Title: fmt.Sprintf("Failed to deploy %s %s", pj.ID, phase), Fields: fields}
-			self.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
+			if _, _, err := self.client.PostMessage(channel, slack.MsgOptionAttachments(msg)); err != nil {
+				log.Printf("Failed to post message: %s", err.Error())
+			}
 			return
 		}
 
@@ -56,8 +59,9 @@ func (self InteractorLambda) approve(target string, phase string, branch string,
 		if res.Message() != "" {
 			msg.Fields = append(msg.Fields, slack.AttachmentField{Title: "response", Value: res.Message()})
 		}
-		self.client.PostMessage(channel, slack.MsgOptionAttachments(msg))
-		return
+		if _, _, err := self.client.PostMessage(channel, slack.MsgOptionAttachments(msg)); err != nil {
+			log.Printf("Failed to post message: %s", err.Error())
+		}
 	}()
 
 	blocks = self.plainBlocks("Now deploying ...")
