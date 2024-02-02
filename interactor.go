@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 )
 
 // DeployUsecase, or alternatively, interactor as well call it in our cocdebase, is an interface that defines the usecases of deploy.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 )
 
 type InteractorContext struct {
@@ -31,7 +31,7 @@ func (i InteractorContext) branchList(pj DeployProject, phase string) ([]slack.B
 	var opts []*slack.OptionBlockObject
 	for n, v := range arr {
 		txt := slack.NewTextBlockObject("plain_text", v, false, false)
-		opt := slack.NewOptionBlockObject(fmt.Sprintf("%s|%s_%s_%d", i.actionHeader("selectbranch"), pj.ID, phase, n), txt)
+		opt := slack.NewOptionBlockObject(fmt.Sprintf("%s|%s_%s_%d", i.actionHeader("selectbranch"), pj.ID, phase, n), txt, nil)
 		opts = append(opts, opt)
 	}
 	txt := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*%s* branch list", repo), false, false)
