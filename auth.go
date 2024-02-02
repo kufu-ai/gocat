@@ -22,11 +22,15 @@ type slackConfig struct {
 // getSecret fetches slackConfig from AWS Secrets Manager secret
 // denoted by secretName.
 // The secret must be a JSON object with the keys defined in slackConfig.
-func getSecret(secretName string) slackConfig {
+func getSecret(secretName string) (*slackConfig, error) {
 	//Create a Secrets Manager client
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("ap-northeast-1")},
 	)
+	if err != nil {
+		log.Print("Error creating session", err)
+		return nil, err
+	}
 	svc := secretsmanager.New(sess)
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId:     aws.String(secretName),
@@ -65,7 +69,7 @@ func getSecret(secretName string) slackConfig {
 			// Message from an error.
 			log.Print(err.Error())
 		}
-		return slackConfig{}
+		return nil, err
 	}
 
 	// Decrypts secret using the associated KMS CMK.
@@ -77,10 +81,10 @@ func getSecret(secretName string) slackConfig {
 
 	// Your code goes here.
 	var config slackConfig
-	err = json.Unmarshal([]byte(secretString), &config)
-	if err != nil {
+	if err := json.Unmarshal([]byte(secretString), &config); err != nil {
 		log.Print("Base64 Decode Error:", err)
-		return slackConfig{}
+		return nil, err
 	}
-	return config
+
+	return &config, nil
 }
