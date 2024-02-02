@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
+	"log"
+
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"log"
 )
 
 func createJob(job *batchv1.Job) (err error) {
@@ -14,7 +15,7 @@ func createJob(job *batchv1.Job) (err error) {
 		return
 	}
 
-	job, err = client.BatchV1().Jobs(job.Namespace).Create(context.Background(), job, metav1.CreateOptions{})
+	_, err = client.BatchV1().Jobs(job.Namespace).Create(context.Background(), job, metav1.CreateOptions{})
 	if err != nil {
 		log.Print(err)
 		return
