@@ -58,6 +58,9 @@ func (self ModelJob) Deploy(pj DeployProject, phase string, option DeployOption)
 
 	job := batchv1.Job{}
 	j, err := yaml.ToJSON(rawFile)
+	if err != nil {
+		return o, err
+	}
 	err = json.Unmarshal(j, &job)
 	if err != nil {
 		return o, err
