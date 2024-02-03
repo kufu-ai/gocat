@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 )
 
 type InteractorLambda struct {

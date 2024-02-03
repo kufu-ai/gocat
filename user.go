@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/nlopes/slack"
 	"strings"
+
+	"github.com/slack-go/slack"
 )
 
 type User struct {

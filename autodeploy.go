@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 )
 
 type AutoDeploy struct {
