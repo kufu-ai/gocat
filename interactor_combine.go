@@ -20,8 +20,7 @@ func NewInteractorCombine(i InteractorContext) (o InteractorCombine) {
 }
 
 func (self InteractorCombine) Request(pj DeployProject, phase string, branch string, assigner string, channel string) ([]slack.Block, error) {
-	var txt *slack.TextBlockObject
-	txt = slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*%s*\n*%s*\n*%s* ブランチをデプロイしますか?", pj.ID, phase, branch), false, false)
+	txt := slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*%s*\n*%s*\n*%s* ブランチをデプロイしますか?", pj.ID, phase, branch), false, false)
 	btnTxt := slack.NewTextBlockObject("plain_text", "Deploy", false, false)
 	btn := slack.NewButtonBlockElement("", fmt.Sprintf("%s|%s_%s_%s", self.actionHeader("approve"), pj.ID, phase, branch), btnTxt)
 	section := slack.NewSectionBlock(txt, nil, slack.NewAccessory(btn))

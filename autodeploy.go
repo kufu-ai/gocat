@@ -36,11 +36,8 @@ func (a AutoDeploy) CheckAndDeploy(sec int64, dp DeployProject, phase DeployPhas
 	// We don't stop the ticker as this is a long-running process
 	// with no way to cancel it.
 	t := time.NewTicker(time.Duration(sec) * time.Second)
-	for {
-		select {
-		case <-t.C:
-			a.checkAndDeploy(dp, phase)
-		}
+	for range t.C {
+		a.checkAndDeploy(dp, phase)
 	}
 }
 
