@@ -49,6 +49,9 @@ func (k GitOpsPluginKustomize) Prepare(pj DeployProject, phase string, branch st
 		FirstCommitID: currentTag,
 		LastCommitID:  tag,
 	})
+	if err != nil {
+		return
+	}
 
 	commitlog := "*Commit Log*\n"
 	for _, c := range commits {

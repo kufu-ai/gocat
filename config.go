@@ -67,7 +67,10 @@ func InitConfig() (*CatConfig, error) {
 		if os.Getenv("SECRET_NAME") == "" {
 			return nil, fmt.Errorf("Set SECRET_NAME environment variable")
 		}
-		secret := getSecret(os.Getenv("SECRET_NAME"))
+		secret, err := getSecret(os.Getenv("SECRET_NAME"))
+		if err != nil {
+			return nil, fmt.Errorf("unable to get secret: %w", err)
+		}
 		Config.GitHubAccessToken = secret.GitHubBotUserToken
 		Config.SlackOAuthToken = secret.OauthToken
 		Config.SlackVerificationToken = secret.VerificationToken
