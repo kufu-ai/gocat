@@ -12,6 +12,7 @@ import (
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
+	"github.com/zaiminc/gocat/slackcmd"
 )
 
 // SlackListener is a http.Handler that can handle slack events.
@@ -177,6 +178,11 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 		if _, _, err := s.client.PostMessage(ev.Channel, msgOpt); err != nil {
 			log.Println("[ERROR] ", err)
 		}
+		return nil
+	}
+	if cmd, _ := slackcmd.Parse(ev.Text); cmd != nil {
+		log.Printf("[INFO] %s command is Called", cmd.Name())
+		// TODO run the command and post the result to slack
 		return nil
 	}
 	return nil
