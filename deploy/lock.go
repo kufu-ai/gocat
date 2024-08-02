@@ -9,7 +9,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 )
 
-// Coordinaator provides a way to lock and unlock deployments made via gocat.
+// Coordinator provides a way to lock and unlock deployments made via gocat.
 // The lock is used to prevent multiple deployments from happening at the same time.
 //
 // The lock information is stored in a Kubernetes ConfigMap managed by the Coordinaator.
