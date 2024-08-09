@@ -143,7 +143,9 @@ func TestSlackLockUnlock(t *testing.T) {
 
 			// Returns ids and logins of the users who are members of the organization
 
-			w.Write([]byte(`{"data": {"organization": {"membersWithRole": {"nodes": [{"id": "U1234", "login": "user1"}]}}}}`))
+			if _, err := w.Write([]byte(`{"data": {"organization": {"membersWithRole": {"nodes": [{"id": "U1234", "login": "user1"}]}}}}`)); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 		default:
 			http.Error(w, "not found", http.StatusNotFound)
 		}
