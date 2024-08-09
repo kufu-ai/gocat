@@ -147,8 +147,16 @@ func TestSlackLockUnlock(t *testing.T) {
 		slack.OptionAPIURL(ts.GetAPIURL()),
 	)
 
-	config, err := InitConfig()
-	require.NoError(t, err)
+	// You usually do:
+	//   config, err := InitConfig()
+	// But for this test, we'll just set the config manually.
+	config := &CatConfig{
+		ManifestRepository:    "no-need-to-use-a-token-because-this-test-does-not-use-the-manifest-repository",
+		ManifestRepositoryOrg: "no-need-to-use-a-token-because-this-test-does-not-use-the-manifest-repository",
+		GitHubUserName:        "no-need-for-github-user-name-because-this-test-does-not-use-the-manifest-repository",
+		GitHubAccessToken:     "no-need-for-github-access-token-because-this-test-does-not-use-the-manifest-repository",
+		GitHubDefaultBranch:   "no-need-for-github-default-branch-because-this-test-does-not-use-the-manifest-repository",
+	}
 
 	gh := CreateGitHubInstance(
 		ghts.URL+"/graphql",
