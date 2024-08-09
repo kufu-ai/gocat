@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,6 +19,11 @@ func TestLockUnlock(t *testing.T) {
 	}
 
 	c := NewCoordinator("default", "gocat-test")
+	defer func() {
+		if c, _ := c.ClientSet(); c != nil {
+			c.CoreV1().ConfigMaps("default").Delete(context.Background(), "gocat-test", metav1.DeleteOptions{})
+		}
+	}()
 
 	prevKubeconfig := os.Getenv("KUBECONFIG")
 	os.Setenv("KUBECONFIG", kubeconfigPath)
