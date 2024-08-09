@@ -278,16 +278,12 @@ func (s *SlackListener) runCommand(cmd slackcmd.Command, triggeredBy string, rep
 
 // lock locks the given project and environment, and replies to the given channel.
 func (s *SlackListener) lock(cmd *slackcmd.Lock, triggeredBy string, replyIn string) slack.MsgOption {
-	if ok := s.validateProjectEnvUser(cmd.Project, cmd.Env, triggeredBy, replyIn); !ok {
-		return nil
+	if err := s.validateProjectEnvUser(cmd.Project, cmd.Env, triggeredBy, replyIn); err != nil {
+		return s.errorMessage(err.Error())
 	}
 
 	if err := s.getOrCreateCoordinator().Lock(context.Background(), cmd.Project, cmd.Env, triggeredBy, cmd.Reason); err != nil {
-		log.Println("[ERROR] ", err)
-		if _, _, err := s.client.PostMessage(replyIn, s.errorMessage(err.Error())); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
+		return s.errorMessage(err.Error())
 	}
 
 	return s.infoMessage(fmt.Sprintf("Locked %s %s", cmd.Project, cmd.Env))
@@ -295,29 +291,25 @@ func (s *SlackListener) lock(cmd *slackcmd.Lock, triggeredBy string, replyIn str
 
 // unlock unlocks the given project and environment, and replies to the given channel.
 func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy string, replyIn string, force bool) slack.MsgOption {
-	if ok := s.validateProjectEnvUser(cmd.Project, cmd.Env, triggeredBy, replyIn); !ok {
-		return nil
+	if err := s.validateProjectEnvUser(cmd.Project, cmd.Env, triggeredBy, replyIn); err != nil {
+		return s.errorMessage(err.Error())
 	}
 
 	if err := s.getOrCreateCoordinator().Unlock(context.Background(), cmd.Project, cmd.Env, triggeredBy, force); err != nil {
-		log.Println("[ERROR] ", err)
-		if _, _, err := s.client.PostMessage(replyIn, s.errorMessage(err.Error())); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
+		return s.errorMessage(err.Error())
 	}
 
 	return s.infoMessage(fmt.Sprintf("Unlocked %s %s", cmd.Project, cmd.Env))
 }
 
-func (s *SlackListener) validateProjectEnvUser(projectID, env, userID, replyIn string) bool {
+func (s *SlackListener) validateProjectEnvUser(projectID, env, userID, replyIn string) error {
 	pj, err := s.projectList.FindByAlias(projectID)
 	if err != nil {
 		log.Println("[ERROR] ", err)
 		if _, _, err := s.client.PostMessage(replyIn, s.errorMessage(err.Error())); err != nil {
 			log.Println("[ERROR] ", err)
 		}
-		return false
+		return fmt.Errorf("find by alias %q: %w", projectID, err)
 	}
 
 	if phase := pj.FindPhase(env); phase.None() {
@@ -326,7 +318,7 @@ func (s *SlackListener) validateProjectEnvUser(projectID, env, userID, replyIn s
 		if _, _, err := s.client.PostMessage(replyIn, s.errorMessage(err.Error())); err != nil {
 			log.Println("[ERROR] ", err)
 		}
-		return false
+		return fmt.Errorf("find phase %q: %w", env, err)
 	}
 
 	if user := s.userList.FindBySlackUserID(userID); !user.IsDeveloper() {
@@ -335,10 +327,10 @@ func (s *SlackListener) validateProjectEnvUser(projectID, env, userID, replyIn s
 		if _, _, err := s.client.PostMessage(replyIn, s.errorMessage(err.Error())); err != nil {
 			log.Println("[ERROR] ", err)
 		}
-		return false
+		return fmt.Errorf("find by slack user id %q: %w", userID, err)
 	}
 
-	return true
+	return nil
 }
 
 func (s *SlackListener) getOrCreateCoordinator() *deploy.Coordinator {
