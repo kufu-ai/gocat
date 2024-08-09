@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -95,11 +96,15 @@ func TestSlackLockUnlock(t *testing.T) {
 	}
 	ts := slacktest.NewTestServer(func(c slacktest.Customize) {
 		c.Handle("/conversations.history", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(``))
+			if _, err := w.Write([]byte(``)); err != nil {
+				t.Logf("failed to write response: %v", err)
+			}
 		})
 		// List users
 		c.Handle("/users.list", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`{"ok": true, "members": [{"id": "U1234", "name": "User 1", "profile": {"display_name": "user1"}}]}`))
+			if _, err := w.Write([]byte(`{"ok": true, "members": [{"id": "U1234", "name": "User 1", "profile": {"display_name": "user1"}}]}`)); err != nil {
+				t.Logf("failed to write response: %v", err)
+			}
 		})
 		// Message posted to the channel
 		c.Handle("/chat.postMessage", func(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +119,9 @@ func TestSlackLockUnlock(t *testing.T) {
 				return
 			}
 			messages <- m
-			w.Write([]byte(`{"ok": true}`))
+			if _, err := w.Write([]byte(`{"ok": true}`)); err != nil {
+				t.Logf("failed to write response: %v", err)
+			}
 		})
 	})
 	ts.Start()
@@ -191,6 +198,7 @@ func TestSlackLockUnlock(t *testing.T) {
 		projectList:       &projectList,
 		userList:          &userList,
 		interactorFactory: &interactorFactory,
+		mu:                &sync.Mutex{},
 	}
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
@@ -275,7 +283,9 @@ func setupNamespace(t *testing.T, clientset kubernetes.Interface, name string) {
 		require.NoError(t, err)
 	}
 	t.Cleanup(func() {
-		clientset.CoreV1().Namespaces().Delete(context.Background(), ns.Name, metav1.DeleteOptions{})
+		if err := clientset.CoreV1().Namespaces().Delete(context.Background(), ns.Name, metav1.DeleteOptions{}); err != nil {
+			t.Logf("failed to delete namespace %s: %v", ns.Name, err)
+		}
 	})
 }
 
@@ -288,7 +298,9 @@ func setupConfigMaps(t *testing.T, clientset kubernetes.Interface, configMaps ..
 			require.NoError(t, err)
 		}
 		t.Cleanup(func() {
-			clientset.CoreV1().ConfigMaps("default").Delete(context.Background(), cm.Name, metav1.DeleteOptions{})
+			if err := clientset.CoreV1().ConfigMaps("default").Delete(context.Background(), cm.Name, metav1.DeleteOptions{}); err != nil {
+				t.Logf("failed to delete config map %s: %v", cm.Name, err)
+			}
 		})
 	}
 }

@@ -29,7 +29,7 @@ type SlackListener struct {
 	interactorFactory *InteractorFactory
 
 	coordinator *deploy.Coordinator
-	mu          sync.Mutex
+	mu          *sync.Mutex
 }
 
 func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {

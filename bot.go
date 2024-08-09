@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/slack-go/slack"
 )
@@ -44,6 +45,7 @@ func main() {
 		projectList:       &projectList,
 		userList:          &userList,
 		interactorFactory: &interactorFactory,
+		mu:                &sync.Mutex{},
 	})
 	http.Handle("/interaction", interactionHandler{
 		verificationToken: config.SlackVerificationToken,

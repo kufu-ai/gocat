@@ -21,7 +21,9 @@ func TestLockUnlock(t *testing.T) {
 	c := NewCoordinator("default", "gocat-test")
 	defer func() {
 		if c, _ := c.ClientSet(); c != nil {
-			c.CoreV1().ConfigMaps("default").Delete(context.Background(), "gocat-test", metav1.DeleteOptions{})
+			if err := c.CoreV1().ConfigMaps("default").Delete(context.Background(), "gocat-test", metav1.DeleteOptions{}); err != nil {
+				t.Log(err)
+			}
 		}
 	}()
 
