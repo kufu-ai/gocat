@@ -83,9 +83,6 @@ func TestSlackLockUnlock(t *testing.T) {
 	setupConfigMaps(t, clientset, myprojectConfigMap, githubuserMappingConfigMap, rolebindingConfigMap)
 	setupNamespace(t, clientset, "gocat")
 
-	var token = os.Getenv("SLACK_TOKEN")
-	require.NotEmpty(t, token, "SLACK_TOKEN must be set")
-
 	messages := make(chan message, 10)
 	nextMessage := func() message {
 		select {
@@ -146,7 +143,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	}))
 	defer ghts.Close()
 
-	s := slack.New(token,
+	s := slack.New("no-need-to-use-a-token-because-we-are-using-a-fake-server",
 		slack.OptionAPIURL(ts.GetAPIURL()),
 	)
 
