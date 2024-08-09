@@ -181,6 +181,10 @@ func TestSlackLockUnlock(t *testing.T) {
 	)
 
 	userList := UserList{github: gh, slackClient: s}
+	// Set LOCAL so that NewProjectList uses the local kubeconfig
+	local := os.Getenv("LOCAL")
+	os.Setenv("LOCAL", "true")
+	defer os.Setenv("LOCAL", local)
 	projectList := NewProjectList()
 	interactorContext := InteractorContext{
 		projectList: &projectList,
