@@ -38,7 +38,7 @@ func NewCoordinator(ns, configMap string) *Coordinator {
 	}
 }
 
-var ErrLocked = fmt.Errorf("deployment is locked")
+var ErrAlreadyLocked = fmt.Errorf("deployment is already locked")
 var ErrAlreadyUnlocked = fmt.Errorf("deployment is already unlocked")
 
 const (
@@ -82,7 +82,7 @@ func (c *Coordinator) lock(ctx context.Context, project, environment, user, reas
 	}
 
 	if value.Locked {
-		return ErrLocked
+		return ErrAlreadyLocked
 	}
 
 	if n := len(value.History); n >= MaxHistoryItems {

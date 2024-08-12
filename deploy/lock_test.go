@@ -34,8 +34,8 @@ func TestLockUnlock(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, c.Lock(ctx, "myproject1", "prod", "user1", "for deployment of revision a"))
-	require.ErrorIs(t, c.Lock(ctx, "myproject1", "prod", "user1", "for deployment of revision b"), ErrLocked)
-	require.ErrorIs(t, c.Lock(ctx, "myproject1", "prod", "user2", "for deployment of revision b"), ErrLocked)
+	require.ErrorIs(t, c.Lock(ctx, "myproject1", "prod", "user1", "for deployment of revision b"), ErrAlreadyLocked)
+	require.ErrorIs(t, c.Lock(ctx, "myproject1", "prod", "user2", "for deployment of revision b"), ErrAlreadyLocked)
 	require.ErrorIs(t, c.Unlock(ctx, "myproject1", "prod", "user2", false), newNotAllowedToUnlockError("user2"))
 	require.NoError(t, c.Unlock(ctx, "myproject1", "prod", "user2", true))
 	require.ErrorIs(t, c.Unlock(ctx, "myproject1", "prod", "user1", false), ErrAlreadyUnlocked)
