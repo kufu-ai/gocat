@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -260,11 +259,13 @@ func createDeployButtonSection(pj DeployProject, phaseName string) *slack.Sectio
 func (s *SlackListener) runCommand(cmd slackcmd.Command, triggeredBy string, replyIn string) error {
 	var msgOpt slack.MsgOption
 
+	user := s.userList.FindBySlackUserID(triggeredBy)
+
 	switch cmd := cmd.(type) {
 	case *slackcmd.Lock:
-		msgOpt = s.lock(cmd, triggeredBy, replyIn)
+		msgOpt = s.lock(cmd, user, replyIn)
 	case *slackcmd.Unlock:
-		msgOpt = s.unlock(cmd, triggeredBy, replyIn, false)
+		msgOpt = s.unlock(cmd, user, replyIn, false)
 	default:
 		panic("unreachable")
 	}
@@ -277,12 +278,12 @@ func (s *SlackListener) runCommand(cmd slackcmd.Command, triggeredBy string, rep
 }
 
 // lock locks the given project and environment, and replies to the given channel.
-func (s *SlackListener) lock(cmd *slackcmd.Lock, triggeredBy string, replyIn string) slack.MsgOption {
+func (s *SlackListener) lock(cmd *slackcmd.Lock, triggeredBy User, replyIn string) slack.MsgOption {
 	if err := s.validateProjectEnvUser(cmd.Project, cmd.Env, triggeredBy, replyIn); err != nil {
 		return s.errorMessage(err.Error())
 	}
 
-	if err := s.getOrCreateCoordinator().Lock(context.Background(), cmd.Project, cmd.Env, triggeredBy, cmd.Reason); err != nil {
+	if err := s.getOrCreateCoordinator().Lock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackUserID, cmd.Reason); err != nil {
 		return s.errorMessage(err.Error())
 	}
 
@@ -290,19 +291,19 @@ func (s *SlackListener) lock(cmd *slackcmd.Lock, triggeredBy string, replyIn str
 }
 
 // unlock unlocks the given project and environment, and replies to the given channel.
-func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy string, replyIn string, force bool) slack.MsgOption {
+func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy User, replyIn string, force bool) slack.MsgOption {
 	if err := s.validateProjectEnvUser(cmd.Project, cmd.Env, triggeredBy, replyIn); err != nil {
 		return s.errorMessage(err.Error())
 	}
 
-	if err := s.getOrCreateCoordinator().Unlock(context.Background(), cmd.Project, cmd.Env, triggeredBy, force); err != nil {
+	if err := s.getOrCreateCoordinator().Unlock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackUserID, triggeredBy.IsAdmin()); err != nil {
 		return s.errorMessage(err.Error())
 	}
 
 	return s.infoMessage(fmt.Sprintf("Unlocked %s %s", cmd.Project, cmd.Env))
 }
 
-func (s *SlackListener) validateProjectEnvUser(projectID, env, userID, replyIn string) error {
+func (s *SlackListener) validateProjectEnvUser(projectID, env string, user User, replyIn string) error {
 	pj, err := s.projectList.FindByAlias(projectID)
 	if err != nil {
 		log.Println("[ERROR] ", err)
@@ -321,13 +322,8 @@ func (s *SlackListener) validateProjectEnvUser(projectID, env, userID, replyIn s
 		return fmt.Errorf("find phase %q: %w", env, err)
 	}
 
-	if user := s.userList.FindBySlackUserID(userID); !user.IsDeveloper() {
-		err = errors.New("you are not allowed to lock this project")
-		log.Println("[ERROR] ", err)
-		if _, _, err := s.client.PostMessage(replyIn, s.errorMessage(err.Error())); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return fmt.Errorf("find by slack user id %q: %w", userID, err)
+	if !user.IsDeveloper() {
+		return fmt.Errorf("you are not allowed to lock/unlock projects: slack user id %q", user.SlackUserID)
 	}
 
 	return nil

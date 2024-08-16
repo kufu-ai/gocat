@@ -190,7 +190,7 @@ type NotAllowedTounlockError struct {
 }
 
 func (e NotAllowedTounlockError) Error() string {
-	return fmt.Sprintf("user %s is not allowed to unlock", e.User)
+	return fmt.Sprintf("user %s is not allowed to unlock this project", e.User)
 }
 
 func newNotAllowedToUnlockError(user string) NotAllowedTounlockError {
