@@ -5,6 +5,20 @@ import (
 	"strings"
 
 	"github.com/slack-go/slack"
+	v1 "k8s.io/api/core/v1"
+)
+
+// Role is a type to represent a role of a user.
+//
+// A user can have multiple roles.
+// But we currently assume any Admin users are also Developer users.
+// So, a consumer of this type should be able to check if a user has an equal or higher role than
+// Developer by checking if the user has the Developer role.
+type Role string
+
+const (
+	RoleDeveloper Role = "Developer"
+	RoleAdmin     Role = "Admin"
 )
 
 type User struct {
@@ -13,10 +27,18 @@ type User struct {
 	GitHubUserName   string
 	GitHubNodeID     string
 	isDeveloper      bool
+	isAdmin          bool
 }
 
 func (u User) IsDeveloper() bool {
 	return u.isDeveloper
+}
+
+// IsAdmin returns a flag to indicate whether the user is an admin or not.
+// An admin can force-unlock a project/phase using `@bot unlock` command,
+// even if the project/phase is locked by other users.
+func (u User) IsAdmin() bool {
+	return u.isAdmin
 }
 
 type UserList struct {
@@ -42,6 +64,7 @@ func (ul *UserList) Reload() {
 
 	cml := getConfigMapList("githubuser-mapping")
 	rolebindings := getConfigMapList("rolebinding")
+	userNamesInGroups := ul.createUserNamesInGroups(rolebindings)
 
 	for _, slackUser := range slackUsers {
 		if slackUser.IsBot || slackUser.Deleted {
@@ -55,18 +78,29 @@ func (ul *UserList) Reload() {
 			}
 		}
 		user.GitHubNodeID = githubUsers[user.GitHubUserName]
-		for _, rolebinding := range rolebindings.Items {
-			raw := rolebinding.Data["Developer"]
+		_, user.isDeveloper = userNamesInGroups[RoleDeveloper][user.SlackDisplayName]
+		_, user.isAdmin = userNamesInGroups[RoleAdmin][user.SlackDisplayName]
+		ul.Items = append(ul.Items, user)
+	}
+}
+
+func (ul UserList) createUserNamesInGroups(rolebindings *v1.ConfigMapList) map[Role]map[string]struct{} {
+	userNamesInGroups := map[Role]map[string]struct{}{
+		RoleDeveloper: {},
+		RoleAdmin:     {},
+	}
+	for _, rolebinding := range rolebindings.Items {
+		for group, users := range userNamesInGroups {
+			raw := rolebinding.Data[string(group)]
 			userNames := strings.Split(raw, "\n")
 			for _, userName := range userNames {
-				if user.SlackDisplayName == userName {
-					user.isDeveloper = true
-					break
+				if userName != "" {
+					users[userName] = struct{}{}
 				}
 			}
 		}
-		ul.Items = append(ul.Items, user)
 	}
+	return userNamesInGroups
 }
 
 func (ul UserList) FindBySlackUserID(slackUserID string) User {

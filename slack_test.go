@@ -63,8 +63,10 @@ var rolebindingConfigMap = corev1.ConfigMap{
 	},
 	Data: map[string]string{
 		"Developer": fmt.Sprintf(`%s
-user3
+user2
+user4
 `, user1SlackDisplayName),
+		"Admin": "user4",
 	},
 }
 
@@ -102,7 +104,7 @@ func TestSlackLockUnlock(t *testing.T) {
 		})
 		// List users
 		c.Handle("/users.list", func(w http.ResponseWriter, r *http.Request) {
-			if _, err := w.Write([]byte(`{"ok": true, "members": [{"id": "U1234", "name": "User 1", "profile": {"display_name": "user1"}}]}`)); err != nil {
+			if _, err := w.Write([]byte(`{"ok": true, "members": [{"id": "U1234", "name": "User 1", "profile": {"display_name": "user1"}}, {"id": "U1235", "name": "User 2", "profile": {"display_name": "user2"}}, {"id": "U1237", "name": "User 4", "profile": {"display_name": "user4"}}]}`)); err != nil {
 				t.Logf("failed to write response: %v", err)
 			}
 		})
@@ -219,7 +221,7 @@ func TestSlackLockUnlock(t *testing.T) {
 		Channel: "C1234",
 		Text:    "lock myproject1 production for deployment of revision a",
 	}))
-	require.Equal(t, "deployment is locked", nextMessage().Text())
+	require.Equal(t, "deployment is already locked", nextMessage().Text())
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
@@ -235,19 +237,47 @@ func TestSlackLockUnlock(t *testing.T) {
 	}))
 	require.Equal(t, "deployment is already unlocked", nextMessage().Text())
 
+	//
+	// We assume that any users who aren't visible from the Slack API are not allowed to lock/unlock projects.
+	//
+
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1236",
+		Channel: "C1234",
+		Text:    "lock myproject1 production for deployment of revision a",
+	}))
+	require.Equal(t, "you are not allowed to lock/unlock projects: slack user id \"\"", nextMessage().Text())
+
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1236",
+		Channel: "C1234",
+		Text:    "unlock myproject1 production",
+	}))
+	require.Equal(t, "you are not allowed to lock/unlock projects: slack user id \"\"", nextMessage().Text())
+
+	// User 2 is a developer so can lock the project
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
 		Text:    "lock myproject1 production for deployment of revision a",
 	}))
-	require.Equal(t, "you are not allowed to lock this project", nextMessage().Text())
+	require.Equal(t, "Locked myproject1 production", nextMessage().Text())
 
+	// User 1 is a developer so cannot unlock the project forcefully
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
-		User:    "U1235",
+		User:    "U1234",
 		Channel: "C1234",
 		Text:    "unlock myproject1 production",
 	}))
-	require.Equal(t, "find by slack user id \"U1235\": you are not allowed to lock this project", nextMessage().Text())
+	require.Equal(t, "user U1234 is not allowed to unlock this project", nextMessage().Text())
+
+	// User 4 is an admin and can unlock the project forcefully
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1237",
+		Channel: "C1234",
+		Text:    "unlock myproject1 production",
+	}))
+	require.Equal(t, "Unlocked myproject1 production", nextMessage().Text())
 }
 
 // Message is a message posted to the fake Slack API's chat.postMessage endpoint
