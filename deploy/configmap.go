@@ -3,14 +3,19 @@ package deploy
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ConfigMapValue struct {
-	Locked  bool              `json:"locked"`
-	History []LockHistoryItem `json:"history"`
+// Phase is a type to represent a phase in a project.
+//
+// Each phase can be locked by a user to prevent multiple deployments from happening at the same time.
+// On locking and unlocking, the user ID and the reason for the action are recorded in the history.
+type Phase struct {
+	Locked      bool              `json:"locked"`
+	LockHistory []LockHistoryItem `json:"lockHistory"`
 }
 
 type LockHistoryItem struct {
@@ -29,7 +34,7 @@ const (
 	MaxHistoryItems = 3
 )
 
-func configMapValueToStr(value ConfigMapValue) (string, error) {
+func configMapValueToStr(value Phase) (string, error) {
 	data, err := json.Marshal(value)
 	if err != nil {
 		return "", err
@@ -38,24 +43,33 @@ func configMapValueToStr(value ConfigMapValue) (string, error) {
 	return string(data), nil
 }
 
-func strToConfigMapValue(data string) (ConfigMapValue, error) {
+func strToConfigMapValue(data string) (Phase, error) {
 	if data == "" {
-		return ConfigMapValue{}, nil
+		return Phase{}, nil
 	}
 
-	var value ConfigMapValue
+	var value Phase
 	err := json.Unmarshal([]byte(data), &value)
 	if err != nil {
-		return ConfigMapValue{}, err
+		return Phase{}, err
 	}
 
 	return value, nil
 }
 
+const (
+	Sep = "-"
+)
+
 // configMapKey is a helper function that returns the key within the ConfigMap for the project and the environment
 // which is either locked or unlocked.
 func (c *Coordinator) configMapKey(project, environment string) string {
-	return project + "-" + environment
+	return project + Sep + environment
+}
+
+func splitConfigMapKey(key string) (string, string) {
+	parts := strings.Split(key, Sep)
+	return parts[0], parts[1]
 }
 
 func (c *Coordinator) getOrCreateConfigMap(ctx context.Context) (*corev1.ConfigMap, error) {

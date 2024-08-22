@@ -265,7 +265,7 @@ func (s *SlackListener) runCommand(cmd slackcmd.Command, triggeredBy string, rep
 	case *slackcmd.Lock:
 		msgOpt = s.lock(cmd, user, replyIn)
 	case *slackcmd.Unlock:
-		msgOpt = s.unlock(cmd, user, replyIn, false)
+		msgOpt = s.unlock(cmd, user, replyIn)
 	default:
 		panic("unreachable")
 	}
@@ -291,7 +291,7 @@ func (s *SlackListener) lock(cmd *slackcmd.Lock, triggeredBy User, replyIn strin
 }
 
 // unlock unlocks the given project and environment, and replies to the given channel.
-func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy User, replyIn string, force bool) slack.MsgOption {
+func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy User, replyIn string) slack.MsgOption {
 	if err := s.validateProjectEnvUser(cmd.Project, cmd.Env, triggeredBy, replyIn); err != nil {
 		return s.errorMessage(err.Error())
 	}
