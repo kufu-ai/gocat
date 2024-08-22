@@ -28,13 +28,25 @@ type Coordinator struct {
 	// ConfigMapName is the name of the ConfigMap.
 	ConfigMapName string
 
+	Clock
 	Kubernetes
+}
+
+type Clock interface {
+	Now() metav1.Time
+}
+
+type systemClock struct{}
+
+func (systemClock) Now() metav1.Time {
+	return metav1.Now()
 }
 
 func NewCoordinator(ns, configMap string) *Coordinator {
 	return &Coordinator{
 		Namespace:     ns,
 		ConfigMapName: configMap,
+		Clock:         systemClock{},
 	}
 }
 
@@ -85,14 +97,14 @@ func (c *Coordinator) lock(ctx context.Context, project, environment, user, reas
 		return ErrAlreadyLocked
 	}
 
-	if n := len(value.History); n >= MaxHistoryItems {
-		value.History = value.History[n-MaxHistoryItems+1:]
+	if n := len(value.LockHistory); n >= MaxHistoryItems {
+		value.LockHistory = value.LockHistory[n-MaxHistoryItems+1:]
 	}
 
-	value.History = append(value.History, LockHistoryItem{
+	value.LockHistory = append(value.LockHistory, LockHistoryItem{
 		User:   user,
 		Action: LockActionLock,
-		At:     metav1.Now(),
+		At:     c.Now(),
 		Reason: reason,
 	})
 
@@ -156,19 +168,19 @@ func (c *Coordinator) unlock(ctx context.Context, project, environment, user str
 	if force {
 		value.Locked = false
 	} else {
-		if len(value.History) == 0 || value.History[len(value.History)-1].User != user {
+		if len(value.LockHistory) == 0 || value.LockHistory[len(value.LockHistory)-1].User != user {
 			return newNotAllowedToUnlockError(user)
 		}
 
-		if n := len(value.History); n >= MaxHistoryItems {
-			value.History = value.History[n-MaxHistoryItems+1:]
+		if n := len(value.LockHistory); n >= MaxHistoryItems {
+			value.LockHistory = value.LockHistory[n-MaxHistoryItems+1:]
 		}
 
 		value.Locked = false
-		value.History = append(value.History, LockHistoryItem{
+		value.LockHistory = append(value.LockHistory, LockHistoryItem{
 			User:   user,
 			Action: LockActionUnlock,
-			At:     metav1.Now(),
+			At:     c.Now(),
 		})
 	}
 
@@ -183,6 +195,31 @@ func (c *Coordinator) unlock(ctx context.Context, project, environment, user str
 	}
 
 	return nil
+}
+
+// DescribeLocks returns a map of project names to a map of environment names to the lock information.
+func (c *Coordinator) DescribeLocks(ctx context.Context) (map[string]map[string]Phase, error) {
+	configMap, err := c.getOrCreateConfigMap(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	locks := make(map[string]map[string]Phase)
+	for k, v := range configMap.Data {
+		value, err := strToConfigMapValue(v)
+		if err != nil {
+			return nil, err
+		}
+
+		project, environment := splitConfigMapKey(k)
+		if locks[project] == nil {
+			locks[project] = make(map[string]Phase)
+		}
+
+		locks[project][environment] = value
+	}
+
+	return locks, nil
 }
 
 type NotAllowedTounlockError struct {
