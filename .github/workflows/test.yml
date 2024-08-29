@@ -23,7 +23,7 @@ jobs:
           go-version: '1.19'
           cache: true
       - name: Run tests
-        run: go test ./...
+        run: GOCAT_TEST_KUBECONFIG=$HOME/.kube/config go test ./...
   golangci:
     name: lint
     runs-on: ubuntu-latest
