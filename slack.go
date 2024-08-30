@@ -266,6 +266,8 @@ func (s *SlackListener) runCommand(cmd slackcmd.Command, triggeredBy string, rep
 		msgOpt = s.lock(cmd, user, replyIn)
 	case *slackcmd.Unlock:
 		msgOpt = s.unlock(cmd, user, replyIn)
+	case *slackcmd.DescribeLocks:
+		msgOpt = s.describeLocks()
 	default:
 		panic("unreachable")
 	}
@@ -301,6 +303,33 @@ func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy User, replyIn s
 	}
 
 	return s.infoMessage(fmt.Sprintf("Unlocked %s %s", cmd.Project, cmd.Env))
+}
+
+// describeLocks describes the locks of all projects and environments, and replies to the given channel.
+func (s *SlackListener) describeLocks() slack.MsgOption {
+	locks, err := s.getOrCreateCoordinator().DescribeLocks(context.Background())
+	if err != nil {
+		return s.errorMessage(err.Error())
+	}
+
+	var buf strings.Builder
+	for project, envs := range locks {
+		buf.WriteString(project)
+		buf.WriteString("\n")
+		for env, lock := range envs {
+			buf.WriteString("  ")
+			buf.WriteString(env)
+			buf.WriteString(": ")
+			if lock.Locked {
+				buf.WriteString("Locked")
+			} else {
+				buf.WriteString("Unlocked")
+			}
+			buf.WriteString("\n")
+		}
+	}
+
+	return s.infoMessage(buf.String())
 }
 
 func (s *SlackListener) validateProjectEnvUser(projectID, env string, user User, replyIn string) error {

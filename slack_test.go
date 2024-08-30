@@ -263,6 +263,16 @@ func TestSlackLockUnlock(t *testing.T) {
 	}))
 	require.Equal(t, "Locked myproject1 production", nextMessage().Text())
 
+	// Describe locks
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1235",
+		Channel: "C1234",
+		Text:    "describe locks",
+	}))
+	require.Equal(t, `myproject1
+  production: Locked
+`, nextMessage().Text())
+
 	// User 1 is a developer so cannot unlock the project forcefully
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
@@ -278,6 +288,16 @@ func TestSlackLockUnlock(t *testing.T) {
 		Text:    "unlock myproject1 production",
 	}))
 	require.Equal(t, "Unlocked myproject1 production", nextMessage().Text())
+
+	// Describe locks
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1235",
+		Channel: "C1234",
+		Text:    "describe locks",
+	}))
+	require.Equal(t, `myproject1
+  production: Unlocked
+`, nextMessage().Text())
 }
 
 // Message is a message posted to the fake Slack API's chat.postMessage endpoint
