@@ -323,7 +323,9 @@ func (s *SlackListener) describeLocks() slack.MsgOption {
 			if lock.Locked {
 				buf.WriteString("Locked")
 				if len(lock.LockHistory) > 0 {
-					buf.WriteString(" (")
+					buf.WriteString(" (by ")
+					buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].User)
+					buf.WriteString(", for ")
 					buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].Reason)
 					buf.WriteString(")")
 				}
