@@ -270,7 +270,7 @@ func TestSlackLockUnlock(t *testing.T) {
 		Text:    "describe locks",
 	}))
 	require.Equal(t, `myproject1
-  production: Locked (deployment of revision a)
+  production: Locked (by user2, for deployment of revision a)
 `, nextMessage().Text())
 
 	// User 1 is a developer so cannot unlock the project forcefully
@@ -279,7 +279,7 @@ func TestSlackLockUnlock(t *testing.T) {
 		Channel: "C1234",
 		Text:    "unlock myproject1 production",
 	}))
-	require.Equal(t, "user U1234 is not allowed to unlock this project", nextMessage().Text())
+	require.Equal(t, "user user1 is not allowed to unlock this project", nextMessage().Text())
 
 	// User 4 is an admin and can unlock the project forcefully
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{

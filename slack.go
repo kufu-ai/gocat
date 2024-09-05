@@ -285,7 +285,7 @@ func (s *SlackListener) lock(cmd *slackcmd.Lock, triggeredBy User, replyIn strin
 		return s.errorMessage(err.Error())
 	}
 
-	if err := s.getOrCreateCoordinator().Lock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackUserID, cmd.Reason); err != nil {
+	if err := s.getOrCreateCoordinator().Lock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackDisplayName, cmd.Reason); err != nil {
 		return s.errorMessage(err.Error())
 	}
 
@@ -298,7 +298,7 @@ func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy User, replyIn s
 		return s.errorMessage(err.Error())
 	}
 
-	if err := s.getOrCreateCoordinator().Unlock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackUserID, triggeredBy.IsAdmin()); err != nil {
+	if err := s.getOrCreateCoordinator().Unlock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackDisplayName, triggeredBy.IsAdmin()); err != nil {
 		return s.errorMessage(err.Error())
 	}
 
@@ -323,7 +323,9 @@ func (s *SlackListener) describeLocks() slack.MsgOption {
 			if lock.Locked {
 				buf.WriteString("Locked")
 				if len(lock.LockHistory) > 0 {
-					buf.WriteString(" (")
+					buf.WriteString(" (by ")
+					buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].User)
+					buf.WriteString(", for ")
 					buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].Reason)
 					buf.WriteString(")")
 				}
