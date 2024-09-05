@@ -270,7 +270,7 @@ func TestSlackLockUnlock(t *testing.T) {
 		Text:    "describe locks",
 	}))
 	require.Equal(t, `myproject1
-  production: Locked
+  production: Locked (deployment of revision a)
 `, nextMessage().Text())
 
 	// User 1 is a developer so cannot unlock the project forcefully
