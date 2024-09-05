@@ -363,6 +363,27 @@ myproject2
 myproject2
   staging: Locked (by user2, for deployment of revision c)
 `, nextMessage().Text())
+
+	// Unlock project 2 staging
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1235",
+		Channel: "C1234",
+		Text:    "unlock myproject2 staging",
+	}))
+	require.Equal(t, "Unlocked myproject2 staging", nextMessage().Text())
+
+	// Describe locks
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1235",
+		Channel: "C1234",
+		Text:    "describe locks",
+	}))
+	require.Equal(t, `myproject1
+  production: Unlocked
+  staging: Locked (by user2, for deployment of revision b)
+myproject2
+  staging: Unlocked
+`, nextMessage().Text())
 }
 
 // Message is a message posted to the fake Slack API's chat.postMessage endpoint
