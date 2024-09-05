@@ -24,9 +24,23 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var myprojectConfigMap = corev1.ConfigMap{
+var project1ConfigMap = corev1.ConfigMap{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "myproject1",
+		Labels: map[string]string{
+			"gocat.zaim.net/configmap-type": "project",
+		},
+	},
+	Data: map[string]string{
+		"Phases": `- name: production
+- name: staging
+`,
+	},
+}
+
+var project2ConfigMap = corev1.ConfigMap{
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "myproject2",
 		Labels: map[string]string{
 			"gocat.zaim.net/configmap-type": "project",
 		},
@@ -71,6 +85,13 @@ user4
 	},
 }
 
+var configMaps = []corev1.ConfigMap{
+	project1ConfigMap,
+	project2ConfigMap,
+	githubuserMappingConfigMap,
+	rolebindingConfigMap,
+}
+
 // TestSlackLockUnlock tests the lock and unlock commands against
 // a pre-configured Kubernetes cluster, fake Slack API, and fake GitHub API.
 // It verifies that the lock and unlock commands work as expected, by sending
@@ -84,7 +105,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	clientset, err := k.ClientSet()
 	require.NoError(t, err)
 
-	setupConfigMaps(t, clientset, myprojectConfigMap, githubuserMappingConfigMap, rolebindingConfigMap)
+	setupConfigMaps(t, clientset, configMaps...)
 	setupNamespace(t, clientset, "gocat")
 
 	messages := make(chan message, 10)
@@ -293,6 +314,27 @@ func TestSlackLockUnlock(t *testing.T) {
   staging: Locked (by user2, for deployment of revision b)
 `, nextMessage().Text())
 
+	// Lock project 2 staging
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1235",
+		Channel: "C1234",
+		Text:    "lock myproject2 staging for deployment of revision c",
+	}))
+	require.Equal(t, "Locked myproject2 staging", nextMessage().Text())
+
+	// Describe locks
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1235",
+		Channel: "C1234",
+		Text:    "describe locks",
+	}))
+	require.Equal(t, `myproject1
+  production: Locked (by user2, for deployment of revision a)
+  staging: Locked (by user2, for deployment of revision b)
+myproject2
+  staging: Locked (by user2, for deployment of revision c)
+`, nextMessage().Text())
+
 	// User 1 is a developer so cannot unlock the project forcefully
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
@@ -318,6 +360,8 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.Equal(t, `myproject1
   production: Unlocked
   staging: Locked (by user2, for deployment of revision b)
+myproject2
+  staging: Locked (by user2, for deployment of revision c)
 `, nextMessage().Text())
 }
 
