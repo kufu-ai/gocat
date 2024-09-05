@@ -33,6 +33,7 @@ var myprojectConfigMap = corev1.ConfigMap{
 	},
 	Data: map[string]string{
 		"Phases": `- name: production
+- name: staging
 `,
 	},
 }
@@ -273,6 +274,25 @@ func TestSlackLockUnlock(t *testing.T) {
   production: Locked (by user2, for deployment of revision a)
 `, nextMessage().Text())
 
+	// Lock staging
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1235",
+		Channel: "C1234",
+		Text:    "lock myproject1 staging for deployment of revision b",
+	}))
+	require.Equal(t, "Locked myproject1 staging", nextMessage().Text())
+
+	// Describe locks
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1235",
+		Channel: "C1234",
+		Text:    "describe locks",
+	}))
+	require.Equal(t, `myproject1
+  production: Locked (by user2, for deployment of revision a)
+  staging: Locked (by user2, for deployment of revision b)
+`, nextMessage().Text())
+
 	// User 1 is a developer so cannot unlock the project forcefully
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
@@ -297,6 +317,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	}))
 	require.Equal(t, `myproject1
   production: Unlocked
+  staging: Locked (by user2, for deployment of revision b)
 `, nextMessage().Text())
 }
 
