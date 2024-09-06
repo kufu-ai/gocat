@@ -307,16 +307,19 @@ func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy User, replyIn s
 
 // describeLocks describes the locks of all projects and environments, and replies to the given channel.
 func (s *SlackListener) describeLocks() slack.MsgOption {
-	locks, err := s.getOrCreateCoordinator().DescribeLocks(context.Background())
+	projects, err := s.getOrCreateCoordinator().DescribeLocks(context.Background())
 	if err != nil {
 		return s.errorMessage(err.Error())
 	}
 
 	var buf strings.Builder
-	for project, envs := range locks {
+	for _, pj := range projects {
+		project := pj.Name
+		envs := pj.Phases
 		buf.WriteString(project)
 		buf.WriteString("\n")
-		for env, lock := range envs {
+		for _, lock := range envs {
+			env := lock.Name
 			buf.WriteString("  ")
 			buf.WriteString(env)
 			buf.WriteString(": ")

@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -197,8 +198,64 @@ func (c *Coordinator) unlock(ctx context.Context, project, environment, user str
 	return nil
 }
 
-// DescribeLocks returns a map of project names to a map of environment names to the lock information.
-func (c *Coordinator) DescribeLocks(ctx context.Context) (map[string]map[string]Phase, error) {
+type PhaseDesc struct {
+	Name string
+	Phase
+}
+
+type ProjectDesc struct {
+	Name   string
+	Phases []PhaseDesc
+}
+
+func (c *Coordinator) DescribeLocks(ctx context.Context) ([]ProjectDesc, error) {
+	locks, err := c.describeLocks(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	priorities := map[string]int{
+		"production": 1,
+		"staging":    2,
+	}
+
+	var projects []ProjectDesc
+	for project, phasesMap := range locks {
+		var phases []PhaseDesc
+		for name, phase := range phasesMap {
+			phases = append(phases, PhaseDesc{name, phase})
+		}
+
+		sort.SliceStable(phases, func(i, j int) bool {
+			pi, ok := priorities[phases[i].Name]
+			if !ok {
+				pi = 3
+			}
+
+			pj, ok := priorities[phases[j].Name]
+			if !ok {
+				pj = 3
+			}
+
+			if pi != pj {
+				return pi < pj
+			}
+
+			return phases[i].Name < phases[j].Name
+		})
+
+		projects = append(projects, ProjectDesc{project, phases})
+	}
+
+	sort.SliceStable(projects, func(i, j int) bool {
+		return projects[i].Name < projects[j].Name
+	})
+
+	return projects, nil
+}
+
+// describeLocks returns a map of project names to a map of environment names to the lock information.
+func (c *Coordinator) describeLocks(ctx context.Context) (map[string]map[string]Phase, error) {
 	configMap, err := c.getOrCreateConfigMap(ctx)
 	if err != nil {
 		return nil, err
