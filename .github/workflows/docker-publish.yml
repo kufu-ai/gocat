@@ -18,6 +18,7 @@ env:
   IMAGE_NAME: gocat
   DOCKERHUB_USER: yasukexxx
   PLATFORMS: linux/arm64,linux/amd64
+  DOCKERHUB_REPO_OWNER: davinci-std
 
 jobs:
   # Run tests.
@@ -75,7 +76,7 @@ jobs:
 
       - name: Build and Push image
         run: |
-          IMAGE_ID=${{ github.repository_owner }}/$IMAGE_NAME
+          IMAGE_ID=$DOCKERHUB_REPO_OWNER/$IMAGE_NAME
 
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
