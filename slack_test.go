@@ -358,7 +358,6 @@ myproject2
 		Text:    "describe locks",
 	}))
 	require.Equal(t, `myproject1
-  production: Unlocked
   staging: Locked (by user2, for deployment of revision b)
 myproject2
   staging: Locked (by user2, for deployment of revision c)
@@ -379,10 +378,8 @@ myproject2
 		Text:    "describe locks",
 	}))
 	require.Equal(t, `myproject1
-  production: Unlocked
   staging: Locked (by user2, for deployment of revision b)
 myproject2
-  staging: Unlocked
 `, nextMessage().Text())
 }
 
