@@ -319,21 +319,21 @@ func (s *SlackListener) describeLocks() slack.MsgOption {
 		buf.WriteString(project)
 		buf.WriteString("\n")
 		for _, lock := range envs {
+			if !lock.Locked {
+				continue
+			}
+
 			env := lock.Name
 			buf.WriteString("  ")
 			buf.WriteString(env)
 			buf.WriteString(": ")
-			if lock.Locked {
-				buf.WriteString("Locked")
-				if len(lock.LockHistory) > 0 {
-					buf.WriteString(" (by ")
-					buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].User)
-					buf.WriteString(", for ")
-					buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].Reason)
-					buf.WriteString(")")
-				}
-			} else {
-				buf.WriteString("Unlocked")
+			buf.WriteString("Locked")
+			if len(lock.LockHistory) > 0 {
+				buf.WriteString(" (by ")
+				buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].User)
+				buf.WriteString(", for ")
+				buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].Reason)
+				buf.WriteString(")")
 			}
 			buf.WriteString("\n")
 		}
