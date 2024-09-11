@@ -314,13 +314,17 @@ func (s *SlackListener) describeLocks() slack.MsgOption {
 
 	var buf strings.Builder
 	for _, pj := range projects {
-		project := pj.Name
-		envs := pj.Phases
-		buf.WriteString(project)
-		buf.WriteString("\n")
-		for _, lock := range envs {
+		var wroteProjectHeader bool
+		for _, lock := range pj.Phases {
 			if !lock.Locked {
 				continue
+			}
+
+			if !wroteProjectHeader {
+				project := pj.Name
+				buf.WriteString(project)
+				buf.WriteString("\n")
+				wroteProjectHeader = true
 			}
 
 			env := lock.Name
