@@ -379,7 +379,6 @@ myproject2
 	}))
 	require.Equal(t, `myproject1
   staging: Locked (by user2, for deployment of revision b)
-myproject2
 `, nextMessage().Text())
 }
 
