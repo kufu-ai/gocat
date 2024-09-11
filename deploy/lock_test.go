@@ -94,7 +94,7 @@ func TestDescribeLocks(t *testing.T) {
 
 	require.NoError(t, c.Lock(ctx, "myproject1", "prod", "user1", "for deployment of revision a"))
 
-	locks, err := c.describeLocks(ctx)
+	locks, err := c.FetchLocks(ctx, "", "")
 	require.NoError(t, err)
 	require.Len(t, locks, 1)
 
@@ -114,7 +114,7 @@ func TestDescribeLocks(t *testing.T) {
 
 	require.NoError(t, c.Unlock(ctx, "myproject1", "prod", "user1", false))
 
-	locks, err = c.describeLocks(ctx)
+	locks, err = c.FetchLocks(ctx, "", "")
 	require.NoError(t, err)
 	require.Len(t, locks, 1)
 	require.Equal(t, map[string]Phase{

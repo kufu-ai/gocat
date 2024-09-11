@@ -209,7 +209,7 @@ type ProjectDesc struct {
 }
 
 func (c *Coordinator) DescribeLocks(ctx context.Context) ([]ProjectDesc, error) {
-	locks, err := c.describeLocks(ctx)
+	locks, err := c.FetchLocks(ctx, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -254,8 +254,11 @@ func (c *Coordinator) DescribeLocks(ctx context.Context) ([]ProjectDesc, error) 
 	return projects, nil
 }
 
-// describeLocks returns a map of project names to a map of environment names to the lock information.
-func (c *Coordinator) describeLocks(ctx context.Context) (map[string]map[string]Phase, error) {
+// FetchLocks returns a map of project names to a map of environment names to the lock information.
+//
+// Filter can be used to filter the results by `project/phase`.
+// If you specify `myproject/production`, only the lock information for the `production` phase of the `myproject` project is returned.
+func (c *Coordinator) FetchLocks(ctx context.Context, projectFilter, phaseFilter string) (map[string]map[string]Phase, error) {
 	configMap, err := c.getOrCreateConfigMap(ctx)
 	if err != nil {
 		return nil, err
@@ -269,6 +272,15 @@ func (c *Coordinator) describeLocks(ctx context.Context) (map[string]map[string]
 		}
 
 		project, environment := splitConfigMapKey(k)
+
+		if projectFilter != "" && project != projectFilter {
+			continue
+		}
+
+		if phaseFilter != "" && environment != phaseFilter {
+			continue
+		}
+
 		if locks[project] == nil {
 			locks[project] = make(map[string]Phase)
 		}
