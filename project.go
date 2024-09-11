@@ -152,6 +152,9 @@ func (p *ProjectList) Reload() {
 		pj.filterRegexp = cm.Data["FilterRegexp"]
 		pj.targetRegexp = cm.Data["TargetRegexp"]
 		pj.funcName = cm.Data["FuncName"]
+		// Note that, although this is named Alias, it is actually treated as a
+		// mandatory ID of the project, which is used to identify the project.
+		// to be deployed in some places.
 		pj.Alias = cm.Data["Alias"]
 		pj.DisableBranchDeploy = cm.Data["DisableBranchDeploy"] == "true"
 		if err := yaml.Unmarshal([]byte(cm.Data["Steps"]), &pj.steps); err != nil {

@@ -32,6 +32,7 @@ var project1ConfigMap = corev1.ConfigMap{
 		},
 	},
 	Data: map[string]string{
+		"Alias": "myproject1",
 		"Phases": `- name: production
 - name: staging
 `,
@@ -46,6 +47,7 @@ var project2ConfigMap = corev1.ConfigMap{
 		},
 	},
 	Data: map[string]string{
+		"Alias": "myproject2",
 		"Phases": `- name: production
 - name: staging
 `,
@@ -380,6 +382,38 @@ myproject2
 	require.Equal(t, `myproject1
   staging: Locked (by user2, for deployment of revision b)
 `, nextMessage().Text())
+
+	// Deployment to myproject1/staging by user1 should fail because it is locked by user2
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1234",
+		Channel: "C1234",
+		Text:    "deploy myproject1 staging",
+	}))
+	require.Equal(t, "Deployment failed: locked by user2", nextMessage().Text())
+
+	// Deployment to myproject1/staging by user2 should succeed because it is locked by user2
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1235",
+		Channel: "C1234",
+		Text:    "deploy myproject1 staging",
+	}))
+	require.Equal(t, "**\n*staging*\n*master* ブランチ\nをデプロイしますか?", nextMessage().Text())
+
+	// Deployment to myproject1/production by user1 should fail because it is not locked
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1234",
+		Channel: "C1234",
+		Text:    "deploy myproject1 production",
+	}))
+	require.Equal(t, "**\n*production*\n*master* ブランチ\nをデプロイしますか?", nextMessage().Text())
+
+	// Deployment to myproject2/staging by user1 should succeed because it is not locked
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1234",
+		Channel: "C1234",
+		Text:    "deploy myproject2 staging",
+	}))
+	require.Equal(t, "**\n*staging*\n*master* ブランチ\nをデプロイしますか?", nextMessage().Text())
 }
 
 // Message is a message posted to the fake Slack API's chat.postMessage endpoint

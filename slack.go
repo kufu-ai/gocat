@@ -150,6 +150,14 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 		}
 
 		phase := s.toPhase(commands[2])
+
+		if msg, locked := s.checkDeploymentLock(target.ID, phase, ev.User, ev.Channel); locked {
+			if _, _, err := s.client.PostMessage(ev.Channel, msg); err != nil {
+				log.Println("[ERROR] ", err)
+			}
+			return nil
+		}
+
 		interactor := s.interactorFactory.Get(target, phase)
 		blocks, err := interactor.Request(target, phase, target.DefaultBranch(), ev.User, ev.Channel)
 		if err != nil {
@@ -344,6 +352,37 @@ func (s *SlackListener) describeLocks() slack.MsgOption {
 	}
 
 	return s.infoMessage(buf.String())
+}
+
+func (s *SlackListener) checkDeploymentLock(projectID, env string, triggeredBy string, replyIn string) (slack.MsgOption, bool) {
+	locks, err := s.getOrCreateCoordinator().FetchLocks(context.Background(), projectID, env)
+	if err != nil {
+		log.Println("[ERROR] ", err)
+		if _, _, err := s.client.PostMessage(replyIn, s.infoMessage(err.Error())); err != nil {
+			log.Println("[ERROR] ", err)
+		}
+		return nil, false
+	}
+
+	if len(locks) == 0 {
+		// Missing lock means it has never been locked.
+		return nil, false
+	}
+
+	lock, ok := locks[projectID][env]
+	if !ok {
+		// Missing lock means it has never been locked.
+		return nil, false
+	}
+
+	user := s.userList.FindBySlackUserID(triggeredBy)
+
+	if lock.Locked && lock.LockHistory[len(lock.LockHistory)-1].User != user.SlackDisplayName {
+		cause := fmt.Sprintf("locked by %s", lock.LockHistory[len(lock.LockHistory)-1].User)
+		return s.infoMessage(fmt.Sprintf("Deployment failed: %s", cause)), true
+	}
+
+	return nil, false
 }
 
 func (s *SlackListener) validateProjectEnvUser(projectID, env string, user User, replyIn string) error {
