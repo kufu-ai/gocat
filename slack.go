@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -28,7 +27,6 @@ type SlackListener struct {
 	interactorFactory *InteractorFactory
 
 	coordinator *deploy.Coordinator
-	mu          *sync.Mutex
 }
 
 func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -293,7 +291,7 @@ func (s *SlackListener) lock(cmd *slackcmd.Lock, triggeredBy User, replyIn strin
 		return s.errorMessage(err.Error())
 	}
 
-	if err := s.getOrCreateCoordinator().Lock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackDisplayName, cmd.Reason); err != nil {
+	if err := s.coordinator.Lock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackDisplayName, cmd.Reason); err != nil {
 		return s.errorMessage(err.Error())
 	}
 
@@ -306,7 +304,7 @@ func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy User, replyIn s
 		return s.errorMessage(err.Error())
 	}
 
-	if err := s.getOrCreateCoordinator().Unlock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackDisplayName, triggeredBy.IsAdmin()); err != nil {
+	if err := s.coordinator.Unlock(context.Background(), cmd.Project, cmd.Env, triggeredBy.SlackDisplayName, triggeredBy.IsAdmin()); err != nil {
 		return s.errorMessage(err.Error())
 	}
 
@@ -315,7 +313,7 @@ func (s *SlackListener) unlock(cmd *slackcmd.Unlock, triggeredBy User, replyIn s
 
 // describeLocks describes the locks of all projects and environments, and replies to the given channel.
 func (s *SlackListener) describeLocks() slack.MsgOption {
-	projects, err := s.getOrCreateCoordinator().DescribeLocks(context.Background())
+	projects, err := s.coordinator.DescribeLocks(context.Background())
 	if err != nil {
 		return s.errorMessage(err.Error())
 	}
@@ -355,7 +353,7 @@ func (s *SlackListener) describeLocks() slack.MsgOption {
 }
 
 func (s *SlackListener) checkDeploymentLock(projectID, env string, triggeredBy string, replyIn string) (slack.MsgOption, bool) {
-	locks, err := s.getOrCreateCoordinator().FetchLocks(context.Background(), projectID, env)
+	locks, err := s.coordinator.FetchLocks(context.Background(), projectID, env)
 	if err != nil {
 		log.Println("[ERROR] ", err)
 		if _, _, err := s.client.PostMessage(replyIn, s.infoMessage(err.Error())); err != nil {
@@ -409,15 +407,6 @@ func (s *SlackListener) validateProjectEnvUser(projectID, env string, user User,
 	}
 
 	return nil
-}
-
-func (s *SlackListener) getOrCreateCoordinator() *deploy.Coordinator {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.coordinator == nil {
-		s.coordinator = deploy.NewCoordinator("gocat", "deploylocks")
-	}
-	return s.coordinator
 }
 
 func (s *SlackListener) infoMessage(message string) slack.MsgOption {

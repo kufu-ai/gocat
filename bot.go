@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 
 	"github.com/slack-go/slack"
+	"github.com/zaiminc/gocat/deploy"
 )
 
 func main() {
@@ -45,7 +45,7 @@ func main() {
 		projectList:       &projectList,
 		userList:          &userList,
 		interactorFactory: &interactorFactory,
-		mu:                &sync.Mutex{},
+		coordinator:       deploy.NewCoordinator(config.Namespace, config.LocksConfigMapName),
 	})
 	http.Handle("/interaction", interactionHandler{
 		verificationToken: config.SlackVerificationToken,
