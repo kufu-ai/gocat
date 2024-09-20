@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -230,7 +229,7 @@ func TestSlackLockUnlock(t *testing.T) {
 		projectList:       &projectList,
 		userList:          &userList,
 		interactorFactory: &interactorFactory,
-		mu:                &sync.Mutex{},
+		coordinator:       deploy.NewCoordinator("gocat", "deploylocks"),
 	}
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{

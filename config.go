@@ -21,6 +21,10 @@ type CatConfig struct {
 	JenkinsJobToken        string
 	ArgoCDHost             string
 	EnableAutoDeploy       bool // optional (default: false)
+
+	// For deploy.Coordinator
+	Namespace          string
+	LocksConfigMapName string
 }
 
 func findRepositoryName(repo string) string {
@@ -59,6 +63,15 @@ func InitConfig() (*CatConfig, error) {
 	Config.ManifestRepositoryOrg = findRepositoryOrg(Config.ManifestRepository)
 	if Config.GitHubUserName == "" {
 		Config.GitHubUserName = "gocat"
+	}
+
+	Config.Namespace = os.Getenv("CONFIG_NAMESPACE")
+	if Config.Namespace == "" {
+		log.Printf("[WARNING] CONFIG_NAMESPACE environment variable is not set. Lock-related features will not work.")
+	}
+	Config.LocksConfigMapName = os.Getenv("CONFIG_LOCKS_CONFIGMAP_NAME")
+	if Config.LocksConfigMapName == "" {
+		log.Printf("[WARNING] CONFIG_LOCKS_CONFIGMAP_NAME environment variable is not set. Lock-related features will not work.")
 	}
 
 	switch os.Getenv("SECRET_STORE") {
