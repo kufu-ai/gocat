@@ -16,9 +16,9 @@ on:
 env:
   # TODO: Change variable to your image's name.
   IMAGE_NAME: gocat
-  DOCKERHUB_USER: 073722781018412843238584254322
+  DOCKERHUB_USER: zaimbot
   PLATFORMS: linux/arm64,linux/amd64
-  DOCKERHUB_REPO_OWNER: davinci-std
+  DOCKERHUB_REPO_OWNER: zaiminc
 
 jobs:
   # Run tests.
