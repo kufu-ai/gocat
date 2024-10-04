@@ -84,7 +84,7 @@ func parseLockUnlock(text string) (Command, error) {
 }
 
 func parseDescribeLocks(text string) (Command, error) {
-	if text != "describe locks" {
+	if !strings.Contains(text, "describe locks") {
 		return nil, patternError("describe locks")
 	}
 

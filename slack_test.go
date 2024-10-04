@@ -106,11 +106,14 @@ func TestSlackLockUnlock(t *testing.T) {
 	clientset, err := k.ClientSet()
 	require.NoError(t, err)
 
-	setupConfigMaps(t, clientset, configMaps...)
-	setupNamespace(t, clientset, "gocat")
+	ns := getNamespace()
+	setupNamespace(t, clientset, ns)
+	setupConfigMaps(t, clientset, ns, configMaps...)
 
 	messages := make(chan message, 10)
 	nextMessage := func() message {
+		t.Helper()
+
 		select {
 		case <-time.After(5 * time.Second):
 			t.Fatal("timed out waiting for message")
@@ -229,34 +232,34 @@ func TestSlackLockUnlock(t *testing.T) {
 		projectList:       &projectList,
 		userList:          &userList,
 		interactorFactory: &interactorFactory,
-		coordinator:       deploy.NewCoordinator("gocat", "deploylocks"),
+		coordinator:       deploy.NewCoordinator(ns, "deploylocks"),
 	}
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
-		Text:    "lock myproject1 production for deployment of revision a",
+		Text:    "<@U0LAN0Z89> lock myproject1 production for deployment of revision a",
 	}))
 	require.Equal(t, "Locked myproject1 production", nextMessage().Text())
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
-		Text:    "lock myproject1 production for deployment of revision a",
+		Text:    "<@U0LAN0Z89> lock myproject1 production for deployment of revision a",
 	}))
 	require.Equal(t, "deployment is already locked", nextMessage().Text())
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
-		Text:    "unlock myproject1 production",
+		Text:    "<@U0LAN0Z89> unlock myproject1 production",
 	}))
 	require.Equal(t, "Unlocked myproject1 production", nextMessage().Text())
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
-		Text:    "unlock myproject1 production",
+		Text:    "<@U0LAN0Z89> unlock myproject1 production",
 	}))
 	require.Equal(t, "deployment is already unlocked", nextMessage().Text())
 
@@ -267,14 +270,14 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1236",
 		Channel: "C1234",
-		Text:    "lock myproject1 production for deployment of revision a",
+		Text:    "<@U0LAN0Z89> lock myproject1 production for deployment of revision a",
 	}))
 	require.Equal(t, "you are not allowed to lock/unlock projects: slack user id \"\"", nextMessage().Text())
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1236",
 		Channel: "C1234",
-		Text:    "unlock myproject1 production",
+		Text:    "<@U0LAN0Z89> unlock myproject1 production",
 	}))
 	require.Equal(t, "you are not allowed to lock/unlock projects: slack user id \"\"", nextMessage().Text())
 
@@ -282,7 +285,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "lock myproject1 production for deployment of revision a",
+		Text:    "<@U0LAN0Z89> lock myproject1 production for deployment of revision a",
 	}))
 	require.Equal(t, "Locked myproject1 production", nextMessage().Text())
 
@@ -290,7 +293,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "describe locks",
+		Text:    "<@U0LAN0Z89> describe locks",
 	}))
 	require.Equal(t, `myproject1
   production: Locked (by user2, for deployment of revision a)
@@ -300,7 +303,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "lock myproject1 staging for deployment of revision b",
+		Text:    "<@U0LAN0Z89> lock myproject1 staging for deployment of revision b",
 	}))
 	require.Equal(t, "Locked myproject1 staging", nextMessage().Text())
 
@@ -308,7 +311,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "describe locks",
+		Text:    "<@U0LAN0Z89> describe locks",
 	}))
 	require.Equal(t, `myproject1
   production: Locked (by user2, for deployment of revision a)
@@ -319,7 +322,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "lock myproject2 staging for deployment of revision c",
+		Text:    "<@U0LAN0Z89> lock myproject2 staging for deployment of revision c",
 	}))
 	require.Equal(t, "Locked myproject2 staging", nextMessage().Text())
 
@@ -327,7 +330,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "describe locks",
+		Text:    "<@U0LAN0Z89> describe locks",
 	}))
 	require.Equal(t, `myproject1
   production: Locked (by user2, for deployment of revision a)
@@ -340,7 +343,7 @@ myproject2
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
-		Text:    "unlock myproject1 production",
+		Text:    "<@U0LAN0Z89> unlock myproject1 production",
 	}))
 	require.Equal(t, "user user1 is not allowed to unlock this project", nextMessage().Text())
 
@@ -348,7 +351,7 @@ myproject2
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1237",
 		Channel: "C1234",
-		Text:    "unlock myproject1 production",
+		Text:    "<@U0LAN0Z89> unlock myproject1 production",
 	}))
 	require.Equal(t, "Unlocked myproject1 production", nextMessage().Text())
 
@@ -356,7 +359,7 @@ myproject2
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "describe locks",
+		Text:    "<@U0LAN0Z89> describe locks",
 	}))
 	require.Equal(t, `myproject1
   staging: Locked (by user2, for deployment of revision b)
@@ -368,7 +371,7 @@ myproject2
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "unlock myproject2 staging",
+		Text:    "<@U0LAN0Z89> unlock myproject2 staging",
 	}))
 	require.Equal(t, "Unlocked myproject2 staging", nextMessage().Text())
 
@@ -376,7 +379,7 @@ myproject2
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "describe locks",
+		Text:    "<@U0LAN0Z89> describe locks",
 	}))
 	require.Equal(t, `myproject1
   staging: Locked (by user2, for deployment of revision b)
@@ -386,7 +389,7 @@ myproject2
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
-		Text:    "deploy myproject1 staging",
+		Text:    "<@U0LAN0Z89> deploy myproject1 staging",
 	}))
 	require.Equal(t, "Deployment failed: locked by user2", nextMessage().Text())
 
@@ -394,7 +397,7 @@ myproject2
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1235",
 		Channel: "C1234",
-		Text:    "deploy myproject1 staging",
+		Text:    "<@U0LAN0Z89> deploy myproject1 staging",
 	}))
 	require.Equal(t, "**\n*staging*\n*master* ブランチ\nをデプロイしますか?", nextMessage().Text())
 
@@ -402,7 +405,7 @@ myproject2
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
-		Text:    "deploy myproject1 production",
+		Text:    "<@U0LAN0Z89> deploy myproject1 production",
 	}))
 	require.Equal(t, "**\n*production*\n*master* ブランチ\nをデプロイしますか?", nextMessage().Text())
 
@@ -410,7 +413,7 @@ myproject2
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
-		Text:    "deploy myproject2 staging",
+		Text:    "<@U0LAN0Z89> deploy myproject2 staging",
 	}))
 	require.Equal(t, "**\n*staging*\n*master* ブランチ\nをデプロイしますか?", nextMessage().Text())
 }
@@ -460,18 +463,26 @@ func setupNamespace(t *testing.T, clientset kubernetes.Interface, name string) {
 	})
 }
 
-func setupConfigMaps(t *testing.T, clientset kubernetes.Interface, configMaps ...corev1.ConfigMap) {
+func setupConfigMaps(t *testing.T, clientset kubernetes.Interface, ns string, configMaps ...corev1.ConfigMap) {
 	for _, cm := range configMaps {
 		cm := cm
-		_, err := clientset.CoreV1().ConfigMaps("default").Create(context.Background(), &cm, metav1.CreateOptions{})
+		_, err := clientset.CoreV1().ConfigMaps(ns).Create(context.Background(), &cm, metav1.CreateOptions{})
 		if kerrors.IsAlreadyExists(err) {
-			_, err = clientset.CoreV1().ConfigMaps("default").Update(context.Background(), &cm, metav1.UpdateOptions{})
+			_, err = clientset.CoreV1().ConfigMaps(ns).Update(context.Background(), &cm, metav1.UpdateOptions{})
 			require.NoError(t, err)
 		}
 		t.Cleanup(func() {
-			if err := clientset.CoreV1().ConfigMaps("default").Delete(context.Background(), cm.Name, metav1.DeleteOptions{}); err != nil {
+			if err := clientset.CoreV1().ConfigMaps(ns).Delete(context.Background(), cm.Name, metav1.DeleteOptions{}); err != nil {
 				t.Logf("failed to delete config map %s: %v", cm.Name, err)
 			}
 		})
 	}
+}
+
+func getNamespace() string {
+	ns := os.Getenv("CONFIG_NAMESPACE")
+	if ns == "" {
+		ns = "default"
+	}
+	return ns
 }
