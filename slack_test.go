@@ -130,7 +130,7 @@ func TestSlackLockUnlock(t *testing.T) {
 		})
 		// List users
 		c.Handle("/users.list", func(w http.ResponseWriter, r *http.Request) {
-			if _, err := w.Write([]byte(`{"ok": true, "members": [{"id": "U1234", "name": "User 1", "profile": {"display_name": "user1"}}, {"id": "U1235", "name": "User 2", "profile": {"display_name": "user2"}}, {"id": "U1237", "name": "User 4", "profile": {"display_name": "user4"}}]}`)); err != nil {
+			if _, err := w.Write([]byte(`{"ok": true, "members": [{"id": "U1234", "name": "User 1", "profile": {"display_name": "user1"}}, {"id": "U1235", "name": "User 2", "profile": {"display_name": "user2"}}, {"id": "U1236", "name": "User 3", "profile": {"display_name": "user3"}}, {"id": "U1237", "name": "User 4", "profile": {"display_name": "user4"}}]}`)); err != nil {
 				t.Logf("failed to write response: %v", err)
 			}
 		})
@@ -264,7 +264,7 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.Equal(t, "deployment is already unlocked", nextMessage().Text())
 
 	//
-	// We assume that any users who aren't visible from the Slack API are not allowed to lock/unlock projects.
+	// We assume that any users who are visible in the Slack API but not given the Developer role are not allowed to lock/unlock projects.
 	//
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
@@ -272,14 +272,14 @@ func TestSlackLockUnlock(t *testing.T) {
 		Channel: "C1234",
 		Text:    "<@U0LAN0Z89> lock myproject1 production for deployment of revision a",
 	}))
-	require.Equal(t, "you are not allowed to lock/unlock projects: slack user id \"\"", nextMessage().Text())
+	require.Equal(t, "you are not allowed to lock/unlock projects: \"user3\" is missing the Developer role", nextMessage().Text())
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1236",
 		Channel: "C1234",
 		Text:    "<@U0LAN0Z89> unlock myproject1 production",
 	}))
-	require.Equal(t, "you are not allowed to lock/unlock projects: slack user id \"\"", nextMessage().Text())
+	require.Equal(t, "you are not allowed to lock/unlock projects: \"user3\" is missing the Developer role", nextMessage().Text())
 
 	// User 2 is a developer so can lock the project
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{

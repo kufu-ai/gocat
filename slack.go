@@ -403,7 +403,7 @@ func (s *SlackListener) validateProjectEnvUser(projectID, env string, user User,
 	}
 
 	if !user.IsDeveloper() {
-		return fmt.Errorf("you are not allowed to lock/unlock projects: slack user id %q", user.SlackUserID)
+		return fmt.Errorf("you are not allowed to lock/unlock projects: %q is missing the Developer role", user.SlackDisplayName)
 	}
 
 	return nil
