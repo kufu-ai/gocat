@@ -253,6 +253,16 @@ func TestSlackLockUnlock(t *testing.T) {
 		"*デプロイ対象の選択をSlackのUIから選択するデプロイ手法*\n" +
 			"`@bot-name deploy staging`\nstagingの部分はproductionやsandboxに置換可能です。\n" +
 			"デプロイ対象の選択後にデプロイするブランチの選択肢が出てきます。",
+		"*デプロイロックをとる*\n" +
+			"`@bot-name lock api staging for REASON`\n" +
+			"apiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。\n" +
+			"REASON部分にロックする理由を指定する必要があります。",
+		"*デプロイロックを解除する*\n" +
+			"`@bot-name unlock api staging`\n" +
+			"apiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。",
+		"*デプロイロックの状態を確認する*\n" +
+			"`@bot-name describe locks`\n" +
+			"デプロイロックの状態を確認します。",
 	}, nextMessage().Text())
 
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{

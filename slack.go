@@ -209,10 +209,22 @@ func (s *SlackListener) helpMessage() slack.MsgOption {
 	deployText := slack.NewTextBlockObject("mrkdwn", "*デプロイ対象の選択をSlackのUIから選択するデプロイ手法*\n`@bot-name deploy staging`\nstagingの部分はproductionやsandboxに置換可能です。\nデプロイ対象の選択後にデプロイするブランチの選択肢が出てきます。", false, false)
 	deploySection := slack.NewSectionBlock(deployText, nil, nil)
 
+	lockText := slack.NewTextBlockObject("mrkdwn", "*デプロイロックをとる*\n`@bot-name lock api staging for REASON`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。\nREASON部分にロックする理由を指定する必要があります。", false, false)
+	lockSection := slack.NewSectionBlock(lockText, nil, nil)
+
+	unlockText := slack.NewTextBlockObject("mrkdwn", "*デプロイロックを解除する*\n`@bot-name unlock api staging`\napiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。", false, false)
+	unlockSection := slack.NewSectionBlock(unlockText, nil, nil)
+
+	describeLocksText := slack.NewTextBlockObject("mrkdwn", "*デプロイロックの状態を確認する*\n`@bot-name describe locks`\nデプロイロックの状態を確認します。", false, false)
+	describeLocksSection := slack.NewSectionBlock(describeLocksText, nil, nil)
+
 	return slack.MsgOptionBlocks(
 		deployMasterSection,
 		deployBranchSection,
 		deploySection,
+		lockSection,
+		unlockSection,
+		describeLocksSection,
 		CloseButton(),
 	)
 }
