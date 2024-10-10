@@ -196,6 +196,11 @@ func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) erro
 		log.Printf("[INFO] %s command is Called", cmd.Name())
 		return s.runCommand(cmd, ev.User, ev.Channel)
 	}
+
+	if _, _, err := s.client.PostMessage(ev.Channel, s.errorMessage("Invalid command. Say `@bot help` to see the usage guide")); err != nil {
+		log.Println("[INFO] invalid command", ev.Text)
+	}
+
 	return nil
 }
 
