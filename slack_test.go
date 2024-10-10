@@ -268,6 +268,13 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
+		Text:    "<@U0LAN0Z89> lock myproject1 production",
+	}))
+	require.Equal(t, "Invalid command. Say `@bot help` to see the usage guide", nextMessage().Text())
+
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1234",
+		Channel: "C1234",
 		Text:    "<@U0LAN0Z89> lock myproject1 production for deployment of revision a",
 	}))
 	require.Equal(t, "Locked myproject1 production", nextMessage().Text())
