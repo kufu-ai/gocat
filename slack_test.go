@@ -238,6 +238,36 @@ func TestSlackLockUnlock(t *testing.T) {
 	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
 		User:    "U1234",
 		Channel: "C1234",
+		Text:    "<@U0LAN0Z89> help",
+	}))
+	require.Equal(t, []string{
+		"*masterのデプロイ*\n" +
+			"`@bot-name deploy api staging`\n" +
+			"apiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。\n" +
+			"コマンド入力後にデプロイするかの確認ボタンが出てきます。",
+		"*ブランチのデプロイ*\n" +
+			"`@bot-name deploy api staging branch`\n" +
+			"apiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。\n" +
+			"ブランチを選択するドロップダウンが出てきます。\n" +
+			"ブランチ選択後にデプロイするかの確認ボタンが出てきます。",
+		"*デプロイ対象の選択をSlackのUIから選択するデプロイ手法*\n" +
+			"`@bot-name deploy staging`\nstagingの部分はproductionやsandboxに置換可能です。\n" +
+			"デプロイ対象の選択後にデプロイするブランチの選択肢が出てきます。",
+		"*デプロイロックをとる*\n" +
+			"`@bot-name lock api staging for REASON`\n" +
+			"apiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。\n" +
+			"REASON部分にロックする理由を指定する必要があります。",
+		"*デプロイロックを解除する*\n" +
+			"`@bot-name unlock api staging`\n" +
+			"apiの部分はその他アプリケーションに置換可能です。stagingの部分はproductionやsandboxに置換可能です。",
+		"*デプロイロックの状態を確認する*\n" +
+			"`@bot-name describe locks`\n" +
+			"デプロイロックの状態を確認します。",
+	}, nextMessage().Text())
+
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1234",
+		Channel: "C1234",
 		Text:    "<@U0LAN0Z89> lock myproject1 production for deployment of revision a",
 	}))
 	require.Equal(t, "Locked myproject1 production", nextMessage().Text())
@@ -424,11 +454,17 @@ type message struct {
 	channel string
 }
 
-func (m message) Text() string {
+func (m message) Text() interface{} {
+	var texts []string
 	for _, b := range m.Blocks {
 		if b.Type == "section" {
-			return b.Text.Text
+			texts = append(texts, b.Text.Text)
 		}
+	}
+	if len(texts) == 1 {
+		return texts[0]
+	} else if len(texts) > 1 {
+		return texts
 	}
 	return ""
 }
