@@ -76,42 +76,46 @@ func findRepositoryOrg(repo string) string {
 }
 
 func InitConfig() (*CatConfig, error) {
+	return initConfig(os.Getenv)
+}
+
+func initConfig(getenv func(string) string) (*CatConfig, error) {
 	configEnvs := []string{"CONFIG_MANIFEST_REPOSITORY"}
 	for _, configEnv := range configEnvs {
-		if os.Getenv(configEnv) == "" {
+		if getenv(configEnv) == "" {
 			return nil, fmt.Errorf("Set %s environment variable", configEnv)
 		}
 	}
 	var Config = &CatConfig{}
-	Config.ManifestRepository = os.Getenv("CONFIG_MANIFEST_REPOSITORY")
-	Config.EnableAutoDeploy = os.Getenv("CONFIG_ENABLE_AUTO_DEPLOY") == "true"
-	Config.ArgoCDHost = os.Getenv("CONFIG_ARGOCD_HOST")
-	Config.JenkinsHost = os.Getenv("CONFIG_JENKINS_HOST")
-	Config.GitHubUserName = os.Getenv("CONFIG_GITHUB_USER_NAME")
-	Config.GitHubDefaultBranch = os.Getenv("CONFIG_GITHUB_DEFAULT_BRANCH")
+	Config.ManifestRepository = getenv("CONFIG_MANIFEST_REPOSITORY")
+	Config.EnableAutoDeploy = getenv("CONFIG_ENABLE_AUTO_DEPLOY") == "true"
+	Config.ArgoCDHost = getenv("CONFIG_ARGOCD_HOST")
+	Config.JenkinsHost = getenv("CONFIG_JENKINS_HOST")
+	Config.GitHubUserName = getenv("CONFIG_GITHUB_USER_NAME")
+	Config.GitHubDefaultBranch = getenv("CONFIG_GITHUB_DEFAULT_BRANCH")
 	Config.ManifestRepositoryName = findRepositoryName(Config.ManifestRepository)
 	Config.ManifestRepositoryOrg = findRepositoryOrg(Config.ManifestRepository)
-	Config.AppRepositoryOrg = os.Getenv("CONFIG_APP_REPOSITORY_ORG")
+	Config.AppRepositoryOrg = getenv("CONFIG_APP_REPOSITORY_ORG")
 	if Config.GitHubUserName == "" {
 		Config.GitHubUserName = "gocat"
 	}
 
-	Config.Namespace = os.Getenv("CONFIG_NAMESPACE")
+	Config.Namespace = getenv("CONFIG_NAMESPACE")
 	if Config.Namespace == "" {
 		log.Printf("[WARNING] CONFIG_NAMESPACE environment variable is not set. Lock-related features will not work.")
 	}
-	Config.LocksConfigMapName = os.Getenv("CONFIG_LOCKS_CONFIGMAP_NAME")
+	Config.LocksConfigMapName = getenv("CONFIG_LOCKS_CONFIGMAP_NAME")
 	if Config.LocksConfigMapName == "" {
 		log.Printf("[WARNING] CONFIG_LOCKS_CONFIGMAP_NAME environment variable is not set. Lock-related features will not work.")
 	}
 
-	switch os.Getenv("SECRET_STORE") {
+	switch getenv("SECRET_STORE") {
 	case "aws/secrets-manager":
 		log.Print("Using aws/secrets-manager as secret store. Set SECRET_STORE env if you want to use another secret store")
-		if os.Getenv("SECRET_NAME") == "" {
+		if getenv("SECRET_NAME") == "" {
 			return nil, fmt.Errorf("Set SECRET_NAME environment variable")
 		}
-		secret, err := getSecret(os.Getenv("SECRET_NAME"))
+		secret, err := getSecret(getenv("SECRET_NAME"))
 		if err != nil {
 			return nil, fmt.Errorf("unable to get secret: %w", err)
 		}
@@ -127,16 +131,16 @@ func InitConfig() (*CatConfig, error) {
 		log.Print("Using env as secret store. Set SECRET_STORE env if you want to use another secret store")
 		envs := []string{"CONFIG_GITHUB_ACCESS_TOKEN", "CONFIG_SLACK_OAUTH_TOKEN", "CONFIG_SLACK_VERIFICATION_TOKEN", "CONFIG_JENKINS_BOT_TOKEN", "CONFIG_JENKINS_JOB_TOKEN"}
 		for _, env := range envs {
-			if os.Getenv(env) == "" {
+			if getenv(env) == "" {
 				log.Printf("[WARNING] %s environment variable is Empty", env)
 			}
 		}
-		Config.GitHubAccessToken = os.Getenv("CONFIG_GITHUB_ACCESS_TOKEN")
-		Config.AppRepositoryGitHubAccessToken = os.Getenv("CONFIG_APP_REPOSITORY_GITHUB_ACCESS_TOKEN")
-		Config.SlackOAuthToken = os.Getenv("CONFIG_SLACK_OAUTH_TOKEN")
-		Config.SlackVerificationToken = os.Getenv("CONFIG_SLACK_VERIFICATION_TOKEN")
-		Config.JenkinsBotToken = os.Getenv("CONFIG_JENKINS_BOT_TOKEN")
-		Config.JenkinsJobToken = os.Getenv("CONFIG_JENKINS_JOB_TOKEN")
+		Config.GitHubAccessToken = getenv("CONFIG_GITHUB_ACCESS_TOKEN")
+		Config.AppRepositoryGitHubAccessToken = getenv("CONFIG_APP_REPOSITORY_GITHUB_ACCESS_TOKEN")
+		Config.SlackOAuthToken = getenv("CONFIG_SLACK_OAUTH_TOKEN")
+		Config.SlackVerificationToken = getenv("CONFIG_SLACK_VERIFICATION_TOKEN")
+		Config.JenkinsBotToken = getenv("CONFIG_JENKINS_BOT_TOKEN")
+		Config.JenkinsJobToken = getenv("CONFIG_JENKINS_JOB_TOKEN")
 		return Config, nil
 	}
 }
