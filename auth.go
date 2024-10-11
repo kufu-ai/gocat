@@ -17,16 +17,16 @@ type slackConfig struct {
 	JenkinsJobToken     string `json:"JENKINS_JOB_TOKEN"`
 	GitHubBotUserToken  string `json:"GITHUB_BOT_USER_TOKEN"`
 	ArgoCDHost          string `json:"ARGOCD_HOST"`
+
+	AppRepositoryGitHubAccessToken string `json:"APP_REPOSITORY_GITHUB_ACCESS_TOKEN"`
 }
 
-// getSecret fetches slackConfig from AWS Secrets Manager secret
-// denoted by secretName.
-// The secret must be a JSON object with the keys defined in slackConfig.
-func getSecret(secretName string) (*slackConfig, error) {
-	//Create a Secrets Manager client
+// getSecretValue fetches the value of a secret from AWS Secrets Manager.
+func getSecretValue(secretName string) (*secretsmanager.GetSecretValueOutput, error) {
+	// Create a Secrets Manager client
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("ap-northeast-1")},
-	)
+		Region: aws.String("ap-northeast-1"),
+	})
 	if err != nil {
 		log.Print("Error creating session", err)
 		return nil, err
@@ -69,6 +69,18 @@ func getSecret(secretName string) (*slackConfig, error) {
 			// Message from an error.
 			log.Print(err.Error())
 		}
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// getSlackConfigFromSecret fetches slackConfig from AWS Secrets Manager secret
+// denoted by secretName.
+// The secret must be a JSON object with the keys defined in slackConfig.
+func getSlackConfigFromSecret(getSecretValue func(string) (*secretsmanager.GetSecretValueOutput, error), secretName string) (*slackConfig, error) {
+	result, err := getSecretValue(secretName)
+	if err != nil {
 		return nil, err
 	}
 

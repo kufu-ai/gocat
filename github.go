@@ -29,6 +29,9 @@ type GitHub struct {
 	org           string
 	repo          string
 	defaultBranch string
+
+	appOrg    string
+	appClient githubv4.Client
 }
 
 type GitHubInput struct {
@@ -36,7 +39,23 @@ type GitHubInput struct {
 	Branch     string
 }
 
-func CreateGitHubInstance(url, token, org, repo, defaultBranch string) GitHub {
+// appRepositoryAccess provides the interface to get the app repository org and GitHub access token.
+type appRepositoryAccess interface {
+	GetAppRepositoryOrg() string
+	GetAppRepositoryGitHubAccessToken() string
+}
+
+func CreateGitHubInstance(url, token, org, repo, defaultBranch string, appRepoAccess appRepositoryAccess) GitHub {
+	client, httpClient := createGitHubClients(token, url)
+	appClient, _ := createGitHubClients(appRepoAccess.GetAppRepositoryGitHubAccessToken(), url)
+
+	return GitHub{client, httpClient, org, repo, defaultBranch,
+		appRepoAccess.GetAppRepositoryOrg(),
+		appClient,
+	}
+}
+
+func createGitHubClients(token, url string) (githubv4.Client, *http.Client) {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
@@ -48,7 +67,8 @@ func CreateGitHubInstance(url, token, org, repo, defaultBranch string) GitHub {
 	} else {
 		client = githubv4.NewClient(httpClient)
 	}
-	return GitHub{*client, httpClient, org, repo, defaultBranch}
+
+	return *client, httpClient
 }
 
 func (g GitHub) GetFile(path string) (b []byte, err error) {
@@ -119,10 +139,10 @@ func (g GitHub) ListBranch(name string) ([]string, error) {
 	}
 	variables := map[string]interface{}{
 		"name": githubv4.String(name),
-		"org":  githubv4.String(g.org),
+		"org":  githubv4.String(g.appOrg),
 	}
 
-	err := g.client.Query(context.Background(), &query, variables)
+	err := g.appClient.Query(context.Background(), &query, variables)
 	if err != nil {
 		return []string{}, err
 	}
