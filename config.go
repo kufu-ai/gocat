@@ -11,6 +11,22 @@ type CatConfig struct {
 	ManifestRepository     string
 	ManifestRepositoryName string
 	ManifestRepositoryOrg  string
+
+	// This is used as the GitHub organization of the repository included in each project configmap.
+	// Let's say we have a gitops config repository at a/b and a project under c/d where the project configmap
+	// for c/d says the `GitHubRepository: d`.
+	// WITHOUT this field, gocat looks for a/d for the app repository, which is incorrect.
+	// WITH this field set to `c`, gocat looks for c/d for the app repository, which is correct.
+	AppRepositoryOrg string
+
+	// This is used for calling GitHub API for app repositories, where the only usecase is
+	// to list all the branches of the repository.
+	//
+	// If not set, gocat uses the same GitHub access token as the manifest repository, which is
+	// specified in `GitHubAccessToken`.
+	// Put another way, this is specified only when AppRepositoryOrg is different from ManifestRepositoryOrg.
+	AppRepositoryGitHubAccessToken string
+
 	GitHubUserName         string // optional (default: gocat)
 	GitHubAccessToken      string
 	GitHubDefaultBranch    string
@@ -25,6 +41,20 @@ type CatConfig struct {
 	// For deploy.Coordinator
 	Namespace          string
 	LocksConfigMapName string
+}
+
+func (c *CatConfig) GetAppRepositoryOrg() string {
+	if c.AppRepositoryOrg == "" {
+		return c.ManifestRepositoryOrg
+	}
+	return c.AppRepositoryOrg
+}
+
+func (c *CatConfig) GetAppRepositoryGitHubAccessToken() string {
+	if c.AppRepositoryGitHubAccessToken == "" {
+		return c.GitHubAccessToken
+	}
+	return c.AppRepositoryGitHubAccessToken
 }
 
 func findRepositoryName(repo string) string {
@@ -61,6 +91,7 @@ func InitConfig() (*CatConfig, error) {
 	Config.GitHubDefaultBranch = os.Getenv("CONFIG_GITHUB_DEFAULT_BRANCH")
 	Config.ManifestRepositoryName = findRepositoryName(Config.ManifestRepository)
 	Config.ManifestRepositoryOrg = findRepositoryOrg(Config.ManifestRepository)
+	Config.AppRepositoryOrg = os.Getenv("CONFIG_APP_REPOSITORY_ORG")
 	if Config.GitHubUserName == "" {
 		Config.GitHubUserName = "gocat"
 	}
@@ -85,6 +116,7 @@ func InitConfig() (*CatConfig, error) {
 			return nil, fmt.Errorf("unable to get secret: %w", err)
 		}
 		Config.GitHubAccessToken = secret.GitHubBotUserToken
+		Config.AppRepositoryGitHubAccessToken = secret.AppRepositoryGitHubAccessToken
 		Config.SlackOAuthToken = secret.OauthToken
 		Config.SlackVerificationToken = secret.VerificationToken
 		Config.JenkinsBotToken = secret.JenkinsBotUserToken
@@ -100,6 +132,7 @@ func InitConfig() (*CatConfig, error) {
 			}
 		}
 		Config.GitHubAccessToken = os.Getenv("CONFIG_GITHUB_ACCESS_TOKEN")
+		Config.AppRepositoryGitHubAccessToken = os.Getenv("CONFIG_APP_REPOSITORY_GITHUB_ACCESS_TOKEN")
 		Config.SlackOAuthToken = os.Getenv("CONFIG_SLACK_OAUTH_TOKEN")
 		Config.SlackVerificationToken = os.Getenv("CONFIG_SLACK_VERIFICATION_TOKEN")
 		Config.JenkinsBotToken = os.Getenv("CONFIG_JENKINS_BOT_TOKEN")

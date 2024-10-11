@@ -201,6 +201,7 @@ func TestSlackLockUnlock(t *testing.T) {
 		config.ManifestRepositoryOrg,
 		config.ManifestRepositoryName,
 		config.GitHubDefaultBranch,
+		config,
 	)
 	git := CreateGitOperatorInstance(
 		config.GitHubUserName,

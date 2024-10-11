@@ -20,7 +20,9 @@ func main() {
 		config.SlackOAuthToken,
 		slack.OptionLog(log.New(os.Stdout, "slack-bot: ", log.Lshortfile|log.LstdFlags)),
 	)
-	github := CreateGitHubInstance("", config.GitHubAccessToken, config.ManifestRepositoryOrg, config.ManifestRepositoryName, config.GitHubDefaultBranch)
+	github := CreateGitHubInstance("", config.GitHubAccessToken, config.ManifestRepositoryOrg, config.ManifestRepositoryName, config.GitHubDefaultBranch,
+		config,
+	)
 	git := CreateGitOperatorInstance(
 		config.GitHubUserName,
 		config.GitHubAccessToken,

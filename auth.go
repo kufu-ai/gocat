@@ -17,6 +17,8 @@ type slackConfig struct {
 	JenkinsJobToken     string `json:"JENKINS_JOB_TOKEN"`
 	GitHubBotUserToken  string `json:"GITHUB_BOT_USER_TOKEN"`
 	ArgoCDHost          string `json:"ARGOCD_HOST"`
+
+	AppRepositoryGitHubAccessToken string `json:"APP_REPOSITORY_GITHUB_ACCESS_TOKEN"`
 }
 
 // getSecret fetches slackConfig from AWS Secrets Manager secret
