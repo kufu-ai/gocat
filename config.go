@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"regexp"
+
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
 )
 
 type CatConfig struct {
@@ -76,10 +78,10 @@ func findRepositoryOrg(repo string) string {
 }
 
 func InitConfig() (*CatConfig, error) {
-	return initConfig(os.Getenv)
+	return initConfig(getSecretValue, os.Getenv)
 }
 
-func initConfig(getenv func(string) string) (*CatConfig, error) {
+func initConfig(getSecretValue func(string) (*secretsmanager.GetSecretValueOutput, error), getenv func(string) string) (*CatConfig, error) {
 	configEnvs := []string{"CONFIG_MANIFEST_REPOSITORY"}
 	for _, configEnv := range configEnvs {
 		if getenv(configEnv) == "" {
@@ -115,7 +117,7 @@ func initConfig(getenv func(string) string) (*CatConfig, error) {
 		if getenv("SECRET_NAME") == "" {
 			return nil, fmt.Errorf("Set SECRET_NAME environment variable")
 		}
-		secret, err := getSecret(getenv("SECRET_NAME"))
+		secret, err := getSlackConfigFromSecret(getSecretValue, getenv("SECRET_NAME"))
 		if err != nil {
 			return nil, fmt.Errorf("unable to get secret: %w", err)
 		}
