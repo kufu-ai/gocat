@@ -46,6 +46,16 @@ type appRepositoryAccess interface {
 }
 
 func CreateGitHubInstance(url, token, org, repo, defaultBranch string, appRepoAccess appRepositoryAccess) GitHub {
+	client, httpClient := createGitHubClients(token, url)
+	appClient, _ := createGitHubClients(appRepoAccess.GetAppRepositoryGitHubAccessToken(), url)
+
+	return GitHub{client, httpClient, org, repo, defaultBranch,
+		appRepoAccess.GetAppRepositoryOrg(),
+		appClient,
+	}
+}
+
+func createGitHubClients(token, url string) (githubv4.Client, *http.Client) {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
@@ -58,22 +68,7 @@ func CreateGitHubInstance(url, token, org, repo, defaultBranch string, appRepoAc
 		client = githubv4.NewClient(httpClient)
 	}
 
-	var appClient *githubv4.Client
-	{
-		appSrc := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: appRepoAccess.GetAppRepositoryGitHubAccessToken()},
-		)
-		appHTTPClient := oauth2.NewClient(context.Background(), appSrc)
-		if url != "" {
-			appClient = githubv4.NewEnterpriseClient(url, appHTTPClient)
-		} else {
-			appClient = githubv4.NewClient(appHTTPClient)
-		}
-	}
-	return GitHub{*client, httpClient, org, repo, defaultBranch,
-		appRepoAccess.GetAppRepositoryOrg(),
-		*appClient,
-	}
+	return *client, httpClient
 }
 
 func (g GitHub) GetFile(path string) (b []byte, err error) {
