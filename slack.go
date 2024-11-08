@@ -335,38 +335,9 @@ func (s *SlackListener) describeLocks() slack.MsgOption {
 		return s.errorMessage(err.Error())
 	}
 
-	var buf strings.Builder
-	for _, pj := range projects {
-		var wroteProjectHeader bool
-		for _, lock := range pj.Phases {
-			if !lock.Locked {
-				continue
-			}
+	msg := deploy.FormatProjectDescs(projects)
 
-			if !wroteProjectHeader {
-				project := pj.Name
-				buf.WriteString(project)
-				buf.WriteString("\n")
-				wroteProjectHeader = true
-			}
-
-			env := lock.Name
-			buf.WriteString("  ")
-			buf.WriteString(env)
-			buf.WriteString(": ")
-			buf.WriteString("Locked")
-			if len(lock.LockHistory) > 0 {
-				buf.WriteString(" (by ")
-				buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].User)
-				buf.WriteString(", for ")
-				buf.WriteString(lock.LockHistory[len(lock.LockHistory)-1].Reason)
-				buf.WriteString(")")
-			}
-			buf.WriteString("\n")
-		}
-	}
-
-	return s.infoMessage(buf.String())
+	return s.infoMessage(msg)
 }
 
 func (s *SlackListener) checkDeploymentLock(projectID, env string, triggeredBy string, replyIn string) (slack.MsgOption, bool) {
