@@ -25,10 +25,28 @@ func TestFormatProjectDescs(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "myproject1-api",
+			Phases: []PhaseDesc{
+				{
+					Name: "staging",
+					Phase: Phase{
+						Locked: true,
+						LockHistory: []LockHistoryItem{
+							{
+								User:   "user2",
+								Reason: "for deployment of revision b",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	require.Equal(t, `myproject1
   prod: Locked (by user1, for for deployment of revision a)
+myproject1-api
+  staging: Locked (by user2, for for deployment of revision b)
 `, FormatProjectDescs(projects))
-
 }
