@@ -58,11 +58,9 @@ func TestKeysAndValuesEncoding(t *testing.T) {
 					},
 				},
 			},
-			// TODO There's a known bug where "myproject2-api/prod" are conflated as "myproject2/prod".
-			// },
-			// "myproject2-api": {
-			// 	"prod": {
-			"api": {
+		},
+		"myproject2-api": {
+			"prod": {
 				Locked: true,
 				LockHistory: []LockHistoryItem{
 					{

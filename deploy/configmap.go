@@ -68,8 +68,8 @@ func configMapKey(project, environment string) string {
 }
 
 func splitConfigMapKey(key string) (string, string) {
-	parts := strings.Split(key, Sep)
-	return parts[0], parts[1]
+	i := strings.LastIndex(key, Sep)
+	return key[:i], key[i+1:]
 }
 
 func (c *Coordinator) getOrCreateConfigMap(ctx context.Context) (*corev1.ConfigMap, error) {
