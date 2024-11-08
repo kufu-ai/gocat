@@ -56,6 +56,17 @@ func TestFormatProjectDescs(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "myproject3",
+			Phases: []PhaseDesc{
+				{
+					Name: "staging",
+					Phase: Phase{
+						Locked: false,
+					},
+				},
+			},
+		},
 	}
 
 	require.Equal(t, `myproject1
