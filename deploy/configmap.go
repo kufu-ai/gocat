@@ -63,13 +63,13 @@ const (
 
 // configMapKey is a helper function that returns the key within the ConfigMap for the project and the environment
 // which is either locked or unlocked.
-func (c *Coordinator) configMapKey(project, environment string) string {
+func configMapKey(project, environment string) string {
 	return project + Sep + environment
 }
 
 func splitConfigMapKey(key string) (string, string) {
-	parts := strings.Split(key, Sep)
-	return parts[0], parts[1]
+	i := strings.LastIndex(key, Sep)
+	return key[:i], key[i+1:]
 }
 
 func (c *Coordinator) getOrCreateConfigMap(ctx context.Context) (*corev1.ConfigMap, error) {

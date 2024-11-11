@@ -88,31 +88,8 @@ func (c *Coordinator) lock(ctx context.Context, project, environment, user, reas
 		return fmt.Errorf("unable to get or create configmap: %w", err)
 	}
 
-	key := c.configMapKey(project, environment)
-	value, err := strToConfigMapValue(configMap.Data[key])
-	if err != nil {
-		return fmt.Errorf("unable to unmarshal str into value: %w", err)
-	}
-
-	if value.Locked {
-		return ErrAlreadyLocked
-	}
-
-	if n := len(value.LockHistory); n >= MaxHistoryItems {
-		value.LockHistory = value.LockHistory[n-MaxHistoryItems+1:]
-	}
-
-	value.LockHistory = append(value.LockHistory, LockHistoryItem{
-		User:   user,
-		Action: LockActionLock,
-		At:     c.Now(),
-		Reason: reason,
-	})
-
-	value.Locked = true
-
-	configMap.Data[key], err = configMapValueToStr(value)
-	if err != nil {
+	enc := &keysAndValuesEncoding{data: configMap.Data}
+	if err := enc.lock(project, environment, user, reason, c.Now()); err != nil {
 		return err
 	}
 
@@ -156,37 +133,8 @@ func (c *Coordinator) unlock(ctx context.Context, project, environment, user str
 		return err
 	}
 
-	key := c.configMapKey(project, environment)
-	value, err := strToConfigMapValue(configMap.Data[key])
-	if err != nil {
-		return err
-	}
-
-	if !value.Locked {
-		return ErrAlreadyUnlocked
-	}
-
-	if force {
-		value.Locked = false
-	} else {
-		if len(value.LockHistory) == 0 || value.LockHistory[len(value.LockHistory)-1].User != user {
-			return newNotAllowedToUnlockError(user)
-		}
-
-		if n := len(value.LockHistory); n >= MaxHistoryItems {
-			value.LockHistory = value.LockHistory[n-MaxHistoryItems+1:]
-		}
-
-		value.Locked = false
-		value.LockHistory = append(value.LockHistory, LockHistoryItem{
-			User:   user,
-			Action: LockActionUnlock,
-			At:     c.Now(),
-		})
-	}
-
-	configMap.Data[key], err = configMapValueToStr(value)
-	if err != nil {
+	enc := &keysAndValuesEncoding{data: configMap.Data}
+	if err := enc.unlock(project, environment, user, force, c.Now()); err != nil {
 		return err
 	}
 
@@ -264,28 +212,11 @@ func (c *Coordinator) FetchLocks(ctx context.Context, projectFilter, phaseFilter
 		return nil, err
 	}
 
-	locks := make(map[string]map[string]Phase)
-	for k, v := range configMap.Data {
-		value, err := strToConfigMapValue(v)
-		if err != nil {
-			return nil, err
-		}
+	enc := &keysAndValuesEncoding{data: configMap.Data}
 
-		project, environment := splitConfigMapKey(k)
-
-		if projectFilter != "" && project != projectFilter {
-			continue
-		}
-
-		if phaseFilter != "" && environment != phaseFilter {
-			continue
-		}
-
-		if locks[project] == nil {
-			locks[project] = make(map[string]Phase)
-		}
-
-		locks[project][environment] = value
+	locks, err := enc.describeLocks(projectFilter, phaseFilter)
+	if err != nil {
+		return nil, err
 	}
 
 	return locks, nil
