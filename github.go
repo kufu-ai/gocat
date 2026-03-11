@@ -134,7 +134,7 @@ func (g GitHub) ListBranch(name string) ([]string, error) {
 		Repository struct {
 			Refs struct {
 				Nodes []refs
-			} `graphql:"refs(first: 50, refPrefix: \"refs/heads/\")"`
+			} `graphql:"refs(first: 50, refPrefix: \"refs/heads/\", orderBy: {field: TAG_COMMIT_DATE, direction: DESC})"`
 		} `graphql:"repository(owner: $org, name: $name)"`
 	}
 	variables := map[string]interface{}{
