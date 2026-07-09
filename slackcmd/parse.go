@@ -19,24 +19,77 @@ func patternError(pattern string) PatternError {
 	return PatternError{Pattern: pattern}
 }
 
-var lockUnlockPattern = regexp.MustCompile(`(unlock|lock) ([0-9a-zA-Z-]+) (staging|production|sandbox|stg|pro|prd)\s*(.*)`)
+const (
+	projectPattern = `([0-9a-zA-Z-]+)`
+	envPattern     = `(staging|production|sandbox|stg|pro|prd)`
+)
+
+var (
+	mentionPattern               = regexp.MustCompile(`^<@[A-Z0-9]+>$`)
+	lockUnlockPattern            = regexp.MustCompile(`^(unlock|lock) ` + projectPattern + ` ` + envPattern + `\s*(.*)$`)
+	deployBranchListPattern      = regexp.MustCompile(`^deploy ` + projectPattern + ` ` + envPattern + ` branch$`)
+	deployPattern                = regexp.MustCompile(`^deploy ` + projectPattern + ` ` + envPattern + `$`)
+	deployTargetSelectionPattern = regexp.MustCompile(`^deploy ` + envPattern + `$`)
+)
 
 func Parse(text string) (Command, error) {
-	cmd, err1 := parseLockUnlock(text)
+	commandText := trimMention(text)
+
+	cmd, err0 := parseBasic(commandText)
+	if err0 == nil {
+		return cmd, nil
+	} else if !errors.As(err0, &PatternError{}) {
+		return nil, fmt.Errorf("invalid command %q: %w", text, err0)
+	}
+
+	cmd, err1 := parseLockUnlock(commandText)
 	if err1 == nil {
 		return cmd, nil
 	} else if !errors.As(err1, &PatternError{}) {
 		return nil, fmt.Errorf("invalid command %q: %w", text, err1)
 	}
 
-	cmd, err2 := parseDescribeLocks(text)
+	cmd, err2 := parseDescribeLocks(commandText)
 	if err2 == nil {
 		return cmd, nil
 	} else if !errors.As(err2, &PatternError{}) {
 		return nil, fmt.Errorf("invalid command %q: %w", text, err2)
 	}
 
-	return nil, fmt.Errorf("invalid command %q: %v, %v", text, err1, err2)
+	cmd, err3 := parseDeploy(commandText)
+	if err3 == nil {
+		return cmd, nil
+	} else if !errors.As(err3, &PatternError{}) {
+		return nil, fmt.Errorf("invalid command %q: %w", text, err3)
+	}
+
+	return nil, fmt.Errorf("invalid command %q: %v, %v, %v, %v", text, err0, err1, err2, err3)
+}
+
+func trimMention(text string) string {
+	fields := strings.Fields(text)
+	if len(fields) == 0 {
+		return ""
+	}
+
+	if mentionPattern.MatchString(fields[0]) {
+		fields = fields[1:]
+	}
+
+	return strings.Join(fields, " ")
+}
+
+func parseBasic(text string) (Command, error) {
+	switch text {
+	case "help":
+		return &Help{}, nil
+	case "ls":
+		return &ListProjects{}, nil
+	case "reload":
+		return &Reload{}, nil
+	default:
+		return nil, patternError("help|ls|reload")
+	}
 }
 
 func parseLockUnlock(text string) (Command, error) {
@@ -84,11 +137,35 @@ func parseLockUnlock(text string) (Command, error) {
 }
 
 func parseDescribeLocks(text string) (Command, error) {
-	if !strings.Contains(text, "describe locks") {
+	if text != "describe locks" {
 		return nil, patternError("describe locks")
 	}
 
 	return &DescribeLocks{}, nil
+}
+
+func parseDeploy(text string) (Command, error) {
+	if match := deployBranchListPattern.FindStringSubmatch(text); match != nil {
+		return &DeployBranchList{
+			Project: match[1],
+			Env:     match[2],
+		}, nil
+	}
+
+	if match := deployPattern.FindStringSubmatch(text); match != nil {
+		return &Deploy{
+			Project: match[1],
+			Env:     match[2],
+		}, nil
+	}
+
+	if match := deployTargetSelectionPattern.FindStringSubmatch(text); match != nil {
+		return &DeployTargetSelection{
+			Env: match[1],
+		}, nil
+	}
+
+	return nil, patternError("deploy <project> <env> [branch]|deploy <env>")
 }
 
 func findLockUnlock(text string) [][]string {
