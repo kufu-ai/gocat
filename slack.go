@@ -25,6 +25,8 @@ type SlackListener struct {
 	interactorFactory *InteractorFactory
 
 	coordinator *deploy.Coordinator
+
+	allowedPhases []string
 }
 
 func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -173,6 +175,14 @@ func createDeployButtonSection(pj DeployProject, phaseName string) *slack.Sectio
 func (s *SlackListener) runCommand(cmd slackcmd.Command, triggeredBy string, replyIn string) error {
 	var msgOpt slack.MsgOption
 
+	if envCmd, ok := cmd.(slackcmd.EnvCommand); ok && !isPhaseAllowed(s.allowedPhases, envCmd.EnvName()) {
+		msgOpt = s.errorMessage(disallowedPhaseError(envCmd.EnvName()).Error())
+		if _, _, err := s.client.PostMessage(replyIn, msgOpt); err != nil {
+			log.Println("[ERROR] ", err)
+		}
+		return nil
+	}
+
 	switch cmd.(type) {
 	case *slackcmd.Help, *slackcmd.ListProjects:
 		// do nothing
@@ -193,7 +203,7 @@ func (s *SlackListener) runCommand(cmd slackcmd.Command, triggeredBy string, rep
 	case *slackcmd.DeployBranchList:
 		msgOpt = s.deployBranchList(cmd)
 	case *slackcmd.DeployTargetSelection:
-		msgOpt = s.SelectDeployTarget(s.toPhase(cmd.Env))
+		msgOpt = s.SelectDeployTarget(cmd.Env)
 	case *slackcmd.Lock:
 		user := s.userList.FindBySlackUserID(triggeredBy)
 		msgOpt = s.lock(cmd, user, replyIn)
@@ -225,7 +235,7 @@ func (s *SlackListener) deploy(cmd *slackcmd.Deploy, triggeredBy string, replyIn
 		return s.errorMessage(err.Error())
 	}
 
-	phase := s.toPhase(cmd.Env)
+	phase := cmd.Env
 	if msg, locked := s.checkDeploymentLock(target.ID, phase, triggeredBy, replyIn); locked {
 		return msg
 	}
@@ -247,7 +257,7 @@ func (s *SlackListener) deployBranchList(cmd *slackcmd.DeployBranchList) slack.M
 		return s.errorMessage(err.Error())
 	}
 
-	phase := s.toPhase(cmd.Env)
+	phase := cmd.Env
 	interactor := s.interactorFactory.Get(target, phase)
 	blocks, err := interactor.BranchList(target, phase)
 	if err != nil {
@@ -363,17 +373,4 @@ func (s *SlackListener) errorMessage(message string) slack.MsgOption {
 	txt := slack.NewTextBlockObject("mrkdwn", message, false, false)
 	section := slack.NewSectionBlock(txt, nil, nil)
 	return slack.MsgOptionBlocks(section)
-}
-
-func (s *SlackListener) toPhase(str string) string {
-	switch str {
-	case "pro", "prd", "production":
-		return "production"
-	case "stg", "staging":
-		return "staging"
-	case "sandbox":
-		return "sandbox"
-	default:
-		return "staging"
-	}
 }

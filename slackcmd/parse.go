@@ -104,6 +104,7 @@ func parseLockUnlock(text string) (Command, error) {
 		env     = match[0][3]
 		reason  = match[0][4]
 	)
+	env = NormalizeEnv(env)
 
 	switch command {
 	case "unlock":
@@ -148,20 +149,20 @@ func parseDeploy(text string) (Command, error) {
 	if match := deployBranchListPattern.FindStringSubmatch(text); match != nil {
 		return &DeployBranchList{
 			Project: match[1],
-			Env:     match[2],
+			Env:     NormalizeEnv(match[2]),
 		}, nil
 	}
 
 	if match := deployPattern.FindStringSubmatch(text); match != nil {
 		return &Deploy{
 			Project: match[1],
-			Env:     match[2],
+			Env:     NormalizeEnv(match[2]),
 		}, nil
 	}
 
 	if match := deployTargetSelectionPattern.FindStringSubmatch(text); match != nil {
 		return &DeployTargetSelection{
-			Env: match[1],
+			Env: NormalizeEnv(match[1]),
 		}, nil
 	}
 
@@ -170,4 +171,15 @@ func parseDeploy(text string) (Command, error) {
 
 func findLockUnlock(text string) [][]string {
 	return lockUnlockPattern.FindAllStringSubmatch(text, -1)
+}
+
+func NormalizeEnv(env string) string {
+	switch env {
+	case "pro", "prd", "production":
+		return "production"
+	case "stg", "staging":
+		return "staging"
+	default:
+		return env
+	}
 }

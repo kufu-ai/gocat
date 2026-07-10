@@ -517,6 +517,59 @@ func TestSlackHandleMessageEventParsesExactCommand(t *testing.T) {
 	require.Equal(t, "Invalid command. Say `@bot help` to see the usage guide", nextMessage().Text())
 }
 
+func TestSlackHandleMessageEventRejectsDisallowedPhase(t *testing.T) {
+	messages := make(chan message, 1)
+	nextMessage := func() message {
+		t.Helper()
+
+		select {
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for message")
+		case m := <-messages:
+			return m
+		}
+		return message{}
+	}
+
+	ts := slacktest.NewTestServer(func(c slacktest.Customize) {
+		c.Handle("/chat.postMessage", func(w http.ResponseWriter, r *http.Request) {
+			m := message{
+				channel: r.FormValue("channel"),
+				Blocks:  []block{},
+			}
+			blocksValue := r.FormValue("blocks")
+			if err := json.Unmarshal([]byte(blocksValue), &m.Blocks); err != nil {
+				t.Logf("failed to unmarshal blocks: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			messages <- m
+			if _, err := w.Write([]byte(`{"ok": true}`)); err != nil {
+				t.Logf("failed to write response: %v", err)
+			}
+		})
+	})
+	ts.Start()
+	defer ts.Stop()
+
+	s := slack.New("no-need-to-use-a-token-because-we-are-using-a-fake-server",
+		slack.OptionAPIURL(ts.GetAPIURL()),
+	)
+	l := &SlackListener{
+		client:        s,
+		projectList:   &ProjectList{},
+		userList:      &UserList{},
+		allowedPhases: []string{"staging"},
+	}
+
+	require.NoError(t, l.handleMessageEvent(&slackevents.AppMentionEvent{
+		User:    "U1234",
+		Channel: "C1234",
+		Text:    "<@U0LAN0Z89> deploy myproject1 production",
+	}))
+	require.Equal(t, "phase production is not allowed", nextMessage().Text())
+}
+
 // Message is a message posted to the fake Slack API's chat.postMessage endpoint
 type message struct {
 	Blocks  []block

@@ -10,6 +10,7 @@
 |CONFIG_ARGOCD_HOST| Set your ArgoCD host. |false|
 |CONFIG_JENKINS_HOST| Set your Jenkins host. |false|
 |CONFIG_NAMESPACE| Set ConfigMap namespace |false|
+|CONFIG_ALLOWED_PHASES| Comma-separated phases allowed for Slack commands (like `staging,production`). This setting restricts only Slack commands; non-Slack execution paths are not restricted. If empty, all phases are allowed. |false|
 
 ## Secret
 You can use env or AWS Secrets Manager as secret store (default: env).

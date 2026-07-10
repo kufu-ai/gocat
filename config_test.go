@@ -51,6 +51,7 @@ func TestConfigInitGet(t *testing.T) {
 				"CONFIG_GITHUB_ACCESS_TOKEN":                "mytoken",
 				"CONFIG_APP_REPOSITORY_ORG":                 "apporg",
 				"CONFIG_APP_REPOSITORY_GITHUB_ACCESS_TOKEN": "apptoken",
+				"CONFIG_ALLOWED_PHASES":                     "staging, production",
 			},
 			secrets: secrets,
 			want: CatConfig{
@@ -61,6 +62,7 @@ func TestConfigInitGet(t *testing.T) {
 				GitHubUserName:                 "gocat",
 				AppRepositoryOrg:               "apporg",
 				AppRepositoryGitHubAccessToken: "apptoken",
+				AllowedPhases:                  []string{"staging", "production"},
 			},
 			wantAppRepositoryOrg:   "apporg",
 			wantAppRepositoryToken: "apptoken",
