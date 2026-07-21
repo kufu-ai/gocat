@@ -11,7 +11,7 @@ COPY . .
 
 RUN go build -o ./gocat
 
-FROM debian:bullseye AS deps
+FROM debian:bookworm AS deps
 
 RUN apt update && apt install -y curl
 
@@ -30,7 +30,7 @@ RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/kust
   && rm kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz \
   && chmod +x /usr/local/bin/kustomize
 
-FROM debian:bullseye
+FROM debian:bookworm
 
 RUN apt update && apt install -y git
 
