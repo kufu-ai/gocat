@@ -43,6 +43,8 @@ type CatConfig struct {
 	// For deploy.Coordinator
 	Namespace          string
 	LocksConfigMapName string
+
+	AllowedPhases []string
 }
 
 func (c *CatConfig) GetAppRepositoryOrg() string {
@@ -95,6 +97,7 @@ func initConfig(getSecretValue func(string) (*secretsmanager.GetSecretValueOutpu
 	Config.JenkinsHost = getenv("CONFIG_JENKINS_HOST")
 	Config.GitHubUserName = getenv("CONFIG_GITHUB_USER_NAME")
 	Config.GitHubDefaultBranch = getenv("CONFIG_GITHUB_DEFAULT_BRANCH")
+	Config.AllowedPhases = parseAllowedPhases(getenv("CONFIG_ALLOWED_PHASES"))
 	Config.ManifestRepositoryName = findRepositoryName(Config.ManifestRepository)
 	Config.ManifestRepositoryOrg = findRepositoryOrg(Config.ManifestRepository)
 	Config.AppRepositoryOrg = getenv("CONFIG_APP_REPOSITORY_ORG")

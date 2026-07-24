@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -27,6 +25,8 @@ type SlackListener struct {
 	interactorFactory *InteractorFactory
 
 	coordinator *deploy.Coordinator
+
+	allowedPhases []string
 }
 
 func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -83,116 +83,9 @@ func (s SlackListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *SlackListener) handleMessageEvent(ev *slackevents.AppMentionEvent) error {
 	// Only response mention to bot. Ignore else.
 	log.Print(ev.Text)
-	if regexp.MustCompile(`help`).MatchString(ev.Text) {
-		if _, _, err := s.client.PostMessage(ev.Channel, s.helpMessage()); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
-	}
-	if regexp.MustCompile(`ls`).MatchString(ev.Text) {
-		if _, _, err := s.client.PostMessage(ev.Channel, s.projectListMessage()); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
-	}
-	if regexp.MustCompile(`reload`).MatchString(ev.Text) {
-		s.projectList.Reload()
-		s.userList.Reload()
-		section := slack.NewSectionBlock(slack.NewTextBlockObject("mrkdwn", "Deploy Projects and Users is Reloaded", false, false), nil, nil)
-		if _, _, err := s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(section)); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
-	}
 
-	s.projectList.Reload()
-	s.userList.Reload()
-	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|sandbox|stg|pro|prd) branch`).FindAllStringSubmatch(ev.Text, -1); match != nil {
-		log.Println("[INFO] Deploy command is Called")
-		commands := strings.Split(match[0][0], " ")
-		target, err := s.projectList.FindByAlias(commands[1])
-		if err != nil {
-			log.Println("[ERROR] ", err)
-			if _, _, err := s.client.PostMessage(ev.Channel, s.errorMessage(err.Error())); err != nil {
-				log.Println("[ERROR] ", err)
-			}
-			return nil
-		}
-
-		phase := s.toPhase(commands[2])
-		interactor := s.interactorFactory.Get(target, phase)
-		blocks, err := interactor.BranchList(target, phase)
-		if err != nil {
-			log.Println("[ERROR] ", err)
-			if _, _, err := s.client.PostMessage(ev.Channel, s.errorMessage(err.Error())); err != nil {
-				log.Println("[ERROR] ", err)
-			}
-			return nil
-		}
-
-		if _, _, err := s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(blocks...)); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
-	}
-	if match := regexp.MustCompile(`deploy ([0-9a-zA-Z-]+) (staging|production|sandbox|stg|pro|prd)`).FindAllStringSubmatch(ev.Text, -1); match != nil {
-		log.Println("[INFO] Deploy command is Called")
-		commands := strings.Split(match[0][0], " ")
-		target, err := s.projectList.FindByAlias(commands[1])
-		if err != nil {
-			log.Println("[ERROR] ", err)
-			if _, _, err := s.client.PostMessage(ev.Channel, s.errorMessage(err.Error())); err != nil {
-				log.Println("[ERROR] ", err)
-			}
-			return nil
-		}
-
-		phase := s.toPhase(commands[2])
-
-		if msg, locked := s.checkDeploymentLock(target.ID, phase, ev.User, ev.Channel); locked {
-			if _, _, err := s.client.PostMessage(ev.Channel, msg); err != nil {
-				log.Println("[ERROR] ", err)
-			}
-			return nil
-		}
-
-		interactor := s.interactorFactory.Get(target, phase)
-		blocks, err := interactor.Request(target, phase, target.DefaultBranch(), ev.User, ev.Channel)
-		if err != nil {
-			log.Println("[ERROR] ", err)
-			if _, _, err := s.client.PostMessage(ev.Channel, s.errorMessage(err.Error())); err != nil {
-				log.Println("[ERROR] ", err)
-			}
-			return nil
-		}
-
-		if _, _, err := s.client.PostMessage(ev.Channel, slack.MsgOptionBlocks(blocks...)); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
-	}
-	if regexp.MustCompile(`deploy staging`).MatchString(ev.Text) {
-		msgOpt := s.SelectDeployTarget("staging")
-		if _, _, err := s.client.PostMessage(ev.Channel, msgOpt); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
-	}
-	if regexp.MustCompile(`deploy production`).MatchString(ev.Text) {
-		msgOpt := s.SelectDeployTarget("production")
-		if _, _, err := s.client.PostMessage(ev.Channel, msgOpt); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
-	}
-	if regexp.MustCompile(`deploy sandbox`).MatchString(ev.Text) {
-		msgOpt := s.SelectDeployTarget("sandbox")
-		if _, _, err := s.client.PostMessage(ev.Channel, msgOpt); err != nil {
-			log.Println("[ERROR] ", err)
-		}
-		return nil
-	}
-	if cmd, _ := slackcmd.Parse(ev.Text); cmd != nil {
+	cmd, err := slackcmd.Parse(ev.Text)
+	if err == nil {
 		log.Printf("[INFO] %s command is Called", cmd.Name())
 		return s.runCommand(cmd, ev.User, ev.Channel)
 	}
@@ -282,17 +175,45 @@ func createDeployButtonSection(pj DeployProject, phaseName string) *slack.Sectio
 func (s *SlackListener) runCommand(cmd slackcmd.Command, triggeredBy string, replyIn string) error {
 	var msgOpt slack.MsgOption
 
-	user := s.userList.FindBySlackUserID(triggeredBy)
+	if envCmd, ok := cmd.(slackcmd.EnvCommand); ok && !isPhaseAllowed(s.allowedPhases, envCmd.EnvName()) {
+		msgOpt = s.errorMessage(disallowedPhaseError(envCmd.EnvName()).Error())
+		if _, _, err := s.client.PostMessage(replyIn, msgOpt); err != nil {
+			log.Println("[ERROR] ", err)
+		}
+		return nil
+	}
+
+	switch cmd.(type) {
+	case *slackcmd.Help, *slackcmd.ListProjects:
+		// do nothing
+	default:
+		s.projectList.Reload()
+		s.userList.Reload()
+	}
 
 	switch cmd := cmd.(type) {
+	case *slackcmd.Help:
+		msgOpt = s.helpMessage()
+	case *slackcmd.ListProjects:
+		msgOpt = s.projectListMessage()
+	case *slackcmd.Reload:
+		msgOpt = s.reloadMessage()
+	case *slackcmd.Deploy:
+		msgOpt = s.deploy(cmd, triggeredBy, replyIn)
+	case *slackcmd.DeployBranchList:
+		msgOpt = s.deployBranchList(cmd)
+	case *slackcmd.DeployTargetSelection:
+		msgOpt = s.SelectDeployTarget(cmd.Env)
 	case *slackcmd.Lock:
+		user := s.userList.FindBySlackUserID(triggeredBy)
 		msgOpt = s.lock(cmd, user, replyIn)
 	case *slackcmd.Unlock:
+		user := s.userList.FindBySlackUserID(triggeredBy)
 		msgOpt = s.unlock(cmd, user, replyIn)
 	case *slackcmd.DescribeLocks:
 		msgOpt = s.describeLocks()
 	default:
-		panic("unreachable")
+		return fmt.Errorf("unsupported slack command %T", cmd)
 	}
 
 	if _, _, err := s.client.PostMessage(replyIn, msgOpt); err != nil {
@@ -300,6 +221,51 @@ func (s *SlackListener) runCommand(cmd slackcmd.Command, triggeredBy string, rep
 	}
 
 	return nil
+}
+
+func (s *SlackListener) reloadMessage() slack.MsgOption {
+	section := slack.NewSectionBlock(slack.NewTextBlockObject("mrkdwn", "Deploy Projects and Users is Reloaded", false, false), nil, nil)
+	return slack.MsgOptionBlocks(section)
+}
+
+func (s *SlackListener) deploy(cmd *slackcmd.Deploy, triggeredBy string, replyIn string) slack.MsgOption {
+	target, err := s.projectList.FindByAlias(cmd.Project)
+	if err != nil {
+		log.Println("[ERROR] ", err)
+		return s.errorMessage(err.Error())
+	}
+
+	phase := cmd.Env
+	if msg, locked := s.checkDeploymentLock(target.ID, phase, triggeredBy, replyIn); locked {
+		return msg
+	}
+
+	interactor := s.interactorFactory.Get(target, phase)
+	blocks, err := interactor.Request(target, phase, target.DefaultBranch(), triggeredBy, replyIn)
+	if err != nil {
+		log.Println("[ERROR] ", err)
+		return s.errorMessage(err.Error())
+	}
+
+	return slack.MsgOptionBlocks(blocks...)
+}
+
+func (s *SlackListener) deployBranchList(cmd *slackcmd.DeployBranchList) slack.MsgOption {
+	target, err := s.projectList.FindByAlias(cmd.Project)
+	if err != nil {
+		log.Println("[ERROR] ", err)
+		return s.errorMessage(err.Error())
+	}
+
+	phase := cmd.Env
+	interactor := s.interactorFactory.Get(target, phase)
+	blocks, err := interactor.BranchList(target, phase)
+	if err != nil {
+		log.Println("[ERROR] ", err)
+		return s.errorMessage(err.Error())
+	}
+
+	return slack.MsgOptionBlocks(blocks...)
 }
 
 // lock locks the given project and environment, and replies to the given channel.
@@ -407,17 +373,4 @@ func (s *SlackListener) errorMessage(message string) slack.MsgOption {
 	txt := slack.NewTextBlockObject("mrkdwn", message, false, false)
 	section := slack.NewSectionBlock(txt, nil, nil)
 	return slack.MsgOptionBlocks(section)
-}
-
-func (s *SlackListener) toPhase(str string) string {
-	switch str {
-	case "pro", "prd", "production":
-		return "production"
-	case "stg", "staging":
-		return "staging"
-	case "sandbox":
-		return "sandbox"
-	default:
-		return "staging"
-	}
 }

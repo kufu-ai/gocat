@@ -8,3 +8,7 @@ type Unlock struct {
 func (u *Unlock) Name() string {
 	return "Unlock"
 }
+
+func (u *Unlock) EnvName() string {
+	return u.Env
+}

@@ -48,6 +48,7 @@ func main() {
 		userList:          &userList,
 		interactorFactory: &interactorFactory,
 		coordinator:       deploy.NewCoordinator(config.Namespace, config.LocksConfigMapName),
+		allowedPhases:     config.AllowedPhases,
 	})
 	http.Handle("/interaction", interactionHandler{
 		verificationToken: config.SlackVerificationToken,
