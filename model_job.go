@@ -162,16 +162,27 @@ func escapeEnvValue(s string) string {
 	return strings.ReplaceAll(s, "$", "$$")
 }
 
-// upsertEnv removes every variable named env.Name and appends env, so that a
-// manifest defining the same name more than once cannot shadow the value.
+// upsertEnv replaces the first variable named env.Name in place, drops any
+// later duplicates (Kubernetes lets the last one win), and appends env when
+// the name is not defined yet. Keeping the original position matters because
+// Kubernetes expands "$(NAME)" only from variables defined earlier.
 func upsertEnv(envs []corev1.EnvVar, env corev1.EnvVar) []corev1.EnvVar {
 	out := make([]corev1.EnvVar, 0, len(envs)+1)
+	replaced := false
 	for _, e := range envs {
 		if e.Name != env.Name {
 			out = append(out, e)
+			continue
+		}
+		if !replaced {
+			out = append(out, env)
+			replaced = true
 		}
 	}
-	return append(out, env)
+	if !replaced {
+		out = append(out, env)
+	}
+	return out
 }
 
 func init() {

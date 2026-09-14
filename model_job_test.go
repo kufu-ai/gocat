@@ -106,7 +106,19 @@ func TestApplyDeployOption_Env(t *testing.T) {
 		if len(envs) != 2 {
 			t.Fatalf("env count = %d, want 2: %v", len(envs), envs)
 		}
-		if envs[0].Name != "STAGE" || envs[1].Name != "BRANCH" || envs[1].Value != "feature/x" {
+		if envs[0].Name != "BRANCH" || envs[0].Value != "feature/x" || envs[1].Name != "STAGE" {
+			t.Errorf("env = %v", envs)
+		}
+	})
+
+	t.Run("replaced variable keeps its position so later references still expand", func(t *testing.T) {
+		job := newTestJob("", image,
+			corev1.EnvVar{Name: "BRANCH", Value: "master"},
+			corev1.EnvVar{Name: "CHECKOUT_REF", Value: "refs/heads/$(BRANCH)"},
+		)
+		applyDeployOption(job, image, "abc1234", DeployOption{Branch: "feature/x"})
+		envs := job.Spec.Template.Spec.Containers[0].Env
+		if len(envs) != 2 || envs[0].Name != "BRANCH" || envs[0].Value != "feature/x" || envs[1].Name != "CHECKOUT_REF" {
 			t.Errorf("env = %v", envs)
 		}
 	})
