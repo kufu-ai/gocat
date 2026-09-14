@@ -1,4 +1,4 @@
-FROM golang:1.19.4-bullseye AS build
+FROM golang:1.19.13-bookworm AS build
 
 RUN apt update && apt install -y git libc-dev
 
