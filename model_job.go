@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	"encoding/json"
 
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	yaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -45,7 +47,7 @@ func (self ModelJob) Deploy(pj DeployProject, phase string, option DeployOption)
 	}
 
 	tag := option.Tag
-	if tag == "" {
+	if tag == "" && pj.DockerRepository() != "" {
 		ecr, err := CreateECRInstance()
 		if err != nil {
 			return o, err
@@ -70,11 +72,7 @@ func (self ModelJob) Deploy(pj DeployProject, phase string, option DeployOption)
 		job.Namespace = "default"
 	}
 	job.Name = job.Name + "-" + RandString(10)
-	for i, container := range job.Spec.Template.Spec.Containers {
-		if container.Image == pj.DockerRepository() {
-			job.Spec.Template.Spec.Containers[i].Image = container.Image + ":" + tag
-		}
-	}
+	applyDeployOption(&job, pj.DockerRepository(), tag, option)
 
 	if err = createJob(&job); err != nil {
 		return o, err
@@ -117,6 +115,63 @@ func (self ModelJob) Watch(name, namespace string) error {
 		}
 	}
 	return nil
+}
+
+// applyDeployOption fills in the image tag and passes the deploy context to
+// every container of the Job (init containers included) as environment variables:
+//
+//   - BRANCH: the selected branch (the default branch for autodeploy)
+//   - DEPLOY_USER: Slack display name of the approving user, or the Slack user ID
+//
+// Variables with the same name in the manifest are replaced. The values are
+// passed verbatim: "$" is escaped so that Kubernetes does not expand "$(NAME)"
+// references to other environment variables of the container.
+func applyDeployOption(job *batchv1.Job, image string, tag string, option DeployOption) {
+	envs := []corev1.EnvVar{}
+	if option.Branch != "" {
+		envs = append(envs, corev1.EnvVar{Name: "BRANCH", Value: escapeEnvValue(option.Branch)})
+	}
+	if user := deployUserName(option.Assigner); user != "" {
+		envs = append(envs, corev1.EnvVar{Name: "DEPLOY_USER", Value: escapeEnvValue(user)})
+	}
+
+	apply := func(containers []corev1.Container) {
+		for i, container := range containers {
+			if tag != "" && container.Image == image {
+				containers[i].Image = image + ":" + tag
+			}
+			for _, env := range envs {
+				containers[i].Env = upsertEnv(containers[i].Env, env)
+			}
+		}
+	}
+	apply(job.Spec.Template.Spec.InitContainers)
+	apply(job.Spec.Template.Spec.Containers)
+}
+
+func deployUserName(user User) string {
+	if user.SlackDisplayName != "" {
+		return user.SlackDisplayName
+	}
+	return user.SlackUserID
+}
+
+// escapeEnvValue escapes "$" as "$$", which Kubernetes reduces back to a
+// single "$" without expanding "$(NAME)" references.
+func escapeEnvValue(s string) string {
+	return strings.ReplaceAll(s, "$", "$$")
+}
+
+// upsertEnv removes every variable named env.Name and appends env, so that a
+// manifest defining the same name more than once cannot shadow the value.
+func upsertEnv(envs []corev1.EnvVar, env corev1.EnvVar) []corev1.EnvVar {
+	out := make([]corev1.EnvVar, 0, len(envs)+1)
+	for _, e := range envs {
+		if e.Name != env.Name {
+			out = append(out, e)
+		}
+	}
+	return append(out, env)
 }
 
 func init() {
