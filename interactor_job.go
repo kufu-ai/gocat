@@ -53,7 +53,7 @@ func (i InteractorJob) Approve(params string, userID string, channel string) (bl
 func (i InteractorJob) approve(target string, phase string, branch string, userID string, channel string) (blocks []slack.Block, err error) {
 	pj := i.projectList.Find(target)
 
-	res, err := i.model.Deploy(pj, phase, DeployOption{Branch: branch})
+	res, err := i.model.Deploy(pj, phase, DeployOption{Branch: branch, Assigner: i.assigner(userID)})
 	if err != nil {
 		fields := []slack.AttachmentField{
 			{Title: "user", Value: "<@" + userID + ">"},
