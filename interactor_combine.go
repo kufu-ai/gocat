@@ -34,7 +34,7 @@ func (self InteractorCombine) Approve(params string, userID string, channel stri
 
 func (self InteractorCombine) approve(target string, phase string, branch string, userID string, channel string) (blocks []slack.Block, err error) {
 	pj := self.projectList.Find(target)
-	user := self.userList.FindBySlackUserID(userID)
+	user := self.assigner(userID)
 
 	go func() {
 		res, err := self.model.Deploy(pj, phase, DeployOption{Branch: branch, Assigner: user, Wait: true})

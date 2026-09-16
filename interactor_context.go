@@ -21,6 +21,17 @@ func (i InteractorContext) actionHeader(nextFunc string) string {
 	return fmt.Sprintf("deploy_%s_%s", i.kind, nextFunc)
 }
 
+// assigner returns the user who triggered the deploy. A user missing from the
+// user list (not loaded yet, or not registered) is still identified by the
+// Slack user ID so that deploy models can record who triggered them.
+func (i InteractorContext) assigner(slackUserID string) User {
+	user := i.userList.FindBySlackUserID(slackUserID)
+	if user.SlackUserID == "" {
+		user.SlackUserID = slackUserID
+	}
+	return user
+}
+
 func (i InteractorContext) branchList(pj DeployProject, phase string) ([]slack.Block, error) {
 	repo := pj.GitHubRepository()
 	arr, err := i.github.ListBranch(repo)
